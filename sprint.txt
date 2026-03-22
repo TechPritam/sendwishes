@@ -1,0 +1,7 @@
+virtual birthday celebration:
+    1. Letter screenshot
+    2. A "Don't Open Until..." countdown.
+    3. The "Infinity" Gift Reveal
+        After the letter is read, don't let the experience just end.
+        The Feature: Add a "Bottomless Box" at the end of the letter. Clicking a button triggers a 3D "camera fly-through" into the envelope, revealing a gallery of photos or a video montage.
+        Why it stands out: It provides "Secondary Content" that keeps the user on the site longer and increases the emotional weight.
