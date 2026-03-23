@@ -8,6 +8,7 @@ import { MobilePreviewFrame } from "@/app/create/_components/MobilePreviewFrame"
 import { BirthdayPreviewBackground } from "@/app/create/birthday/_components/BirthdayPreviewBackground";
 import { BirthdayPhonePreview } from "@/app/create/birthday/_components/BirthdayPhonePreview";
 import { generateUuid, saveSurprise } from "@/lib/surprises";
+import { FloatingStarsBackground } from "@/components/FloatingStarsBackground";
 
 type Step = "name" | "date" | "letter" | "preview" | "payment";
 
@@ -118,6 +119,8 @@ export function CreateBirthdayStartWizardClient() {
 
   return (
     <ExperienceShell variant="birthday" background="midnight" align="center" paddingY="none">
+      <FloatingStarsBackground count={20} />
+
       <button
         type="button"
         onClick={() => goBackFrom(step)}
@@ -182,16 +185,26 @@ export function CreateBirthdayStartWizardClient() {
 
                 <div className="mt-4">
                   <MobilePreviewFrame title="Birthday" subtitle="Preview" background={<BirthdayPreviewBackground />}>
-                    <BirthdayPhonePreview message={letter} />
+                    <BirthdayPhonePreview message={letter} name={birthdayPerson} />
                   </MobilePreviewFrame>
                 </div>
 
                 <button
                   type="button"
-                  onClick={() => setStep("payment")}
+                  onClick={() => {
+                    const id = generateUuid();
+                    saveSurprise({
+                      id,
+                      type: "birthday",
+                      name: birthdayPerson.trim() || undefined,
+                      message: letter,
+                      photoUrl: null,
+                    });
+                    router.push(`/share/${id}`);
+                  }}
                   className="mt-4 inline-flex h-12 w-full items-center justify-center rounded-full bg-pink-600 px-8 text-base font-semibold text-white shadow-[0_0_18px_rgba(255,255,255,0.18)] transition-all hover:bg-pink-700"
                 >
-                  Create Magic @ ₹99
+                  Create Magic for Free
                 </button>
               </div>
             </div>

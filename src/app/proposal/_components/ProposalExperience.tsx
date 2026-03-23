@@ -249,7 +249,7 @@ export function ProposalExperience({ question, recipient, message, yesText, noTe
                 </div>
 
                 <div className="mt-6 rounded-[2.25rem] bg-white/30 backdrop-blur-2xl border border-white/40 shadow-2xl shadow-rose-200/40 p-5 sm:p-6">
-                  <div className="text-xs font-semibold text-rose-700 uppercase tracking-wider">Celebration</div>
+                  {/* <div className="text-xs font-semibold text-rose-700 uppercase tracking-wider">Celebration</div> */}
                   <div className="mt-4 relative aspect-[16/10] w-full overflow-hidden rounded-3xl ring-1 ring-white/40">
                     <AnimatePresence mode="wait">
                       <motion.img
@@ -267,11 +267,11 @@ export function ProposalExperience({ question, recipient, message, yesText, noTe
                 </div>
 
                 <div className="mt-6 rounded-[2.25rem] bg-white/30 backdrop-blur-2xl border border-white/40 shadow-2xl shadow-rose-200/40 p-6 text-left">
-                  <div className="text-xs font-semibold text-rose-700 uppercase tracking-wider">From me to you</div>
+                  {/* <div className="text-xs font-semibold text-rose-700 uppercase tracking-wider">From me to you</div> */}
                   <div className="mt-3 text-pretty text-base text-zinc-800 sm:text-lg">
                     {safeMessage}
                   </div>
-                  <div className="mt-5 text-sm text-zinc-600">Forever starts now. ♥</div>
+                  {/* <div className="mt-5 text-sm text-zinc-600">Forever starts now. ♥</div> */}
                 </div>
               </motion.div>
             )}

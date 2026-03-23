@@ -33,7 +33,7 @@ export function Navbar() {
   };
 
   return (
-    <header className="sticky top-0 z-30 border-b border-rose-200/50 bg-white/40 backdrop-blur">
+    <header className="relative border-b border-rose-200/50 bg-white/40 backdrop-blur lg:sticky lg:top-0 lg:z-50">
       <nav className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 px-6 py-4">
         <Link
           href="/"
@@ -45,7 +45,7 @@ export function Navbar() {
             <Heart className="h-5 w-5 text-rose-600" fill="currentColor" />
             <Heart className="h-5 w-5 text-pink-500" fill="currentColor" />
           </span>
-          <span className="font-script text-xl">sendyourWishes</span>
+          <span className="text-xl">sendyourWishes</span>
         </Link>
 
         <div className="hidden items-center gap-2 sm:flex">

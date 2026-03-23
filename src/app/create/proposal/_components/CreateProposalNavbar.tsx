@@ -16,16 +16,16 @@ export function CreateProposalNavbar() {
   const isBirthdayScreen = pathname === "/create/birthday" || pathname?.startsWith("/create/birthday/");
 
   const headerClass = isBirthdayScreen
-    ? "sticky top-0 z-50 border-b border-[rgb(0_0_0_/50%)] bg-[rgb(97_95_117_/40%)] backdrop-blur"
-    : "sticky top-0 z-50 border-b border-rose-200/50 bg-white/40 backdrop-blur";
+    ? "relative border-b border-[rgb(0_0_0_/50%)] bg-[rgb(97_95_117_/40%)] backdrop-blur lg:sticky lg:top-0 lg:z-50"
+    : "relative border-b border-rose-200/50 bg-white/40 backdrop-blur lg:sticky lg:top-0 lg:z-50";
 
   const pillBaseClass = isBirthdayScreen
     ? "rounded-full bg-white/10 px-4 py-2 ring-1 ring-white/15 backdrop-blur"
     : "glass-pill";
 
   const brandClass = isBirthdayScreen
-    ? "inline-flex items-center gap-2 text-base font-semibold tracking-tight text-white"
-    : "inline-flex items-center gap-2 text-base font-semibold tracking-tight text-zinc-900";
+    ? "inline-flex items-center gap-2 text-base font-semibold tracking-tight text-[rgb(146_130_193)] "
+    : "inline-flex items-center gap-2 text-base font-semibold tracking-tight text-[rgb(121_29_80)]";
 
   const items = useMemo<NavItem[]>(() => {
     // On the birthday create flow, remove "Birthday" and show "Proposal".

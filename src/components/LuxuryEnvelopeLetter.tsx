@@ -2,21 +2,26 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Cinzel, Great_Vibes, Montserrat } from "next/font/google";
+import { Cinzel, Edu_NSW_ACT_Cursive, Montserrat } from "next/font/google";
 
 const cinzel = Cinzel({ subsets: ["latin"], weight: ["400", "700"] });
-const greatVibes = Great_Vibes({ subsets: ["latin"], weight: ["400"] });
 const montserrat = Montserrat({ subsets: ["latin"], weight: ["300", "600"] });
+const eduCursive = Edu_NSW_ACT_Cursive({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  adjustFontFallback: false,
+});
 
 export type LuxuryEnvelopeLetterProps = {
   message: string;
   reduceMotion?: boolean;
+  onClose?: () => void;
 };
 
 type Stage = "closed" | "open" | "extracted" | "focused";
 
-export function LuxuryEnvelopeLetter({ message, reduceMotion = false }: LuxuryEnvelopeLetterProps) {
-  const safeMessage = useMemo(() => message?.trim() ?? "", [message]);
+export function LuxuryEnvelopeLetter({ message, reduceMotion = false, onClose }: LuxuryEnvelopeLetterProps) {
+  const safeMessage = useMemo(() => message ?? "", [message]);
   const [stage, setStage] = useState<Stage>("closed");
   const [typed, setTyped] = useState("");
   const timersRef = useRef<number[]>([]);
@@ -106,6 +111,7 @@ export function LuxuryEnvelopeLetter({ message, reduceMotion = false }: LuxuryEn
           type="button"
           onClick={(e) => {
             e.stopPropagation();
+            onClose?.();
             closeSequence();
           }}
           data-testid="lux-close"
@@ -159,8 +165,8 @@ export function LuxuryEnvelopeLetter({ message, reduceMotion = false }: LuxuryEn
               <div className="flex-1">
                 <div
                   className={
-                    greatVibes.className +
-                    " whitespace-pre-wrap text-center text-[clamp(1.15rem,2.9vh,1.65rem)] leading-[1.5] text-zinc-800"
+                    eduCursive.className +
+                    " whitespace-pre-wrap break-words hyphens-auto text-center text-[20px] leading-[1.5] text-zinc-800"
                   }
                   data-testid="lux-letter-text"
                 >

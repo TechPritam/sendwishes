@@ -311,7 +311,7 @@ export function ProposalPhonePreview({
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="text-base font-bold text-zinc-900"
+            className="text-base font-bold text-[rgb(121_29_80)]"
           >
             {/* {recipient === "him" ? "He" : "She"} said <span className="text-rose-600">YES!</span> ♥ */}
             <span className="text-rose-600"> You said Yes!</span>

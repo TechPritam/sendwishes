@@ -2,11 +2,15 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Cinzel, Great_Vibes, Montserrat } from "next/font/google";
+import { Cinzel, Edu_NSW_ACT_Cursive, Montserrat } from "next/font/google";
 
 const cinzel = Cinzel({ subsets: ["latin"], weight: ["400", "700"] });
-const greatVibes = Great_Vibes({ subsets: ["latin"], weight: ["400"] });
 const montserrat = Montserrat({ subsets: ["latin"], weight: ["300", "600"] });
+const eduCursive = Edu_NSW_ACT_Cursive({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  adjustFontFallback: false,
+});
 
 type Stage = "closed" | "open" | "extracted" | "focused";
 
@@ -17,7 +21,7 @@ export type LuxuryEnvelopeLetterPreviewProps = {
 };
 
 export function LuxuryEnvelopeLetterPreview({ message, reduceMotion = false, autoStart = true }: LuxuryEnvelopeLetterPreviewProps) {
-  const safeMessage = useMemo(() => message?.trim() ?? "", [message]);
+  const safeMessage = useMemo(() => message ?? "", [message]);
   const [stage, setStage] = useState<Stage>("closed");
   const [typed, setTyped] = useState("");
   const timersRef = useRef<number[]>([]);
@@ -117,8 +121,8 @@ export function LuxuryEnvelopeLetterPreview({ message, reduceMotion = false, aut
                 <div className="flex-1">
                   <div
                     className={
-                      greatVibes.className +
-                      " whitespace-pre-wrap text-center text-[clamp(1.02rem,2.6vh,1.3rem)] leading-[1.55] text-zinc-800"
+                      eduCursive.className +
+                      " whitespace-pre-wrap break-words hyphens-auto text-center text-[14px] leading-[1.55] text-zinc-800"
                     }
                   >
                     {typed}
@@ -187,7 +191,7 @@ export function LuxuryEnvelopeLetterPreview({ message, reduceMotion = false, aut
           <motion.p
             className={
               cinzel.className +
-              " absolute left-[calc(50%-30px)] w-[min(80vw,290px)] -translate-x-1/2 text-center text-[10px] uppercase tracking-widest text-white"
+              " absolute inset-x-0 mx-auto w-[min(80vw,290px)] text-center text-[10px] uppercase tracking-widest text-white"
             }
             style={{ top: "calc(50% + 108px)" }}
             initial={{ opacity: 0, y: 6 }}

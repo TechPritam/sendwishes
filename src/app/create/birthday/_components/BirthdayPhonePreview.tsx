@@ -16,7 +16,7 @@ function wait(ms: number) {
   });
 }
 
-export function BirthdayPhonePreview({ message }: { message?: string } = {}) {
+export function BirthdayPhonePreview({ message, name }: { message?: string; name?: string } = {}) {
   const reduceMotion: boolean = useReducedMotion() ?? false;
   const words = useMemo(() => ["YOU", "ARE", "TOTALLY", "AWESOME!"], []);
 
@@ -307,8 +307,7 @@ export function BirthdayPhonePreview({ message }: { message?: string } = {}) {
   }, [reduceMotion, words]);
 
   const letterMessage = useMemo(() => {
-    const trimmed = message?.trim();
-    if (trimmed) return trimmed;
+    if (typeof message === "string" && message.trim().length > 0) return message;
 
     return (
       "Dear my favorite human,\n\n" +
@@ -410,7 +409,9 @@ export function BirthdayPhonePreview({ message }: { message?: string } = {}) {
             className="relative flex h-full flex-col items-center justify-center mt-10"
           >
             <div className="w-full rounded-3xl border border-white/15 bg-white/10 p-4 text-center backdrop-blur">
-              <div className={luckiestGuy.className + " text-2xl tracking-tight text-white"}>Happy Birthday!</div>
+              <div className={luckiestGuy.className + " text-2xl tracking-tight text-white"}>
+                {name?.trim() ? `Happy Birthday, ${name.trim()}!` : "Happy Birthday!"}
+              </div>
               <div className="mt-1 text-xs text-white/70">Blow the candles & cut the cake.</div>
             </div>
 

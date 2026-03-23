@@ -83,8 +83,88 @@ export function ShareClient() {
 
   const heartSrc = useMemo(() => buildHeartDataUri(), []);
 
-  const handleWhatsAppShare = () => {
-    const message = encodeURIComponent(`I have a special surprise for you! 💌 Open it here: ${shareUrl}`);
+  const buildShareText = (url: string) => {
+    return (
+      "🎁 I made a surprise for you! 💌\n\n" +
+      "Scan the QR 📷 or open the link 🔗:\n" +
+      `${url}\n\n` +
+      "Can’t wait for you to see it ✨"
+    );
+  };
+
+  const svgToPngFile = async (svgEl: SVGSVGElement, filename: string) => {
+    svgEl.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+    const xml = new XMLSerializer().serializeToString(svgEl);
+    const svgBlob = new Blob([xml], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(svgBlob);
+
+    try {
+      const img = new Image();
+      // Helps in some browsers; since we use an object URL, this is safe.
+      img.crossOrigin = "anonymous";
+
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error("Failed to load SVG image"));
+        img.src = url;
+      });
+
+      const size = 1024;
+      const canvas = document.createElement("canvas");
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("Canvas not available");
+
+      // White background for WhatsApp readability.
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, size, size);
+      ctx.drawImage(img, 0, 0, size, size);
+
+      const blob: Blob = await new Promise((resolve, reject) => {
+        canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("Failed to render PNG"))), "image/png");
+      });
+
+      return new File([blob], filename, { type: "image/png" });
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  };
+
+  const handleWhatsAppShare = async () => {
+    if (!shareUrl) return;
+    const text = buildShareText(shareUrl);
+
+    // Best experience on mobile: share text + QR image via native share sheet.
+    if (typeof navigator !== "undefined" && "share" in navigator) {
+      try {
+        const wrap = qrWrapRef.current;
+        const svg = wrap?.querySelector("svg") as SVGSVGElement | null;
+        if (svg) {
+          const file = await svgToPngFile(svg, `sendwishes-qr-${id ?? "surprise"}.png`);
+          const canShareFiles =
+            typeof (navigator as unknown as { canShare?: (d: ShareData) => boolean }).canShare === "function" &&
+            (navigator as unknown as { canShare: (d: ShareData) => boolean }).canShare({ files: [file] });
+
+          if (canShareFiles) {
+            await (navigator as unknown as { share: (d: ShareData) => Promise<void> }).share({
+              text,
+              files: [file],
+            });
+            return;
+          }
+        }
+
+        // Fallback: share text only via share sheet.
+        await (navigator as unknown as { share: (d: ShareData) => Promise<void> }).share({ text });
+        return;
+      } catch {
+        // If user cancels or share fails, fall back to wa.me below.
+      }
+    }
+
+    // Desktop / fallback: WhatsApp web link share (text only).
+    const message = encodeURIComponent(text);
     window.open(`https://wa.me/?text=${message}`, "_blank");
   };
 
@@ -103,7 +183,13 @@ export function ShareClient() {
             Send it with <span className="text-rose-500">Love</span>
           </h1>
           <p className="mt-4 text-zinc-500 text-lg">
-            {record?.name ? `Birthday surprise for ${record.name} is ready to be shared.` : "Your magic link is ready to be shared."}
+            {record?.name
+              ? record.type === "birthday"
+                ? `Birthday surprise for ${record.name} is ready to be shared.`
+                : record.type === "proposal"
+                  ? `Surprise for ${record.name} is ready to be shared.`
+                  : `Your surprise for ${record.name} is ready to be shared.`
+              : "Your magic link is ready to be shared."}
           </p>
         </header>
 

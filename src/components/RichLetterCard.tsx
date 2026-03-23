@@ -1,9 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Caveat, Montserrat } from "next/font/google";
+import { Edu_NSW_ACT_Cursive, Montserrat } from "next/font/google";
 
-const caveat = Caveat({ weight: ["400", "600"], subsets: ["latin"] });
+const eduCursive = Edu_NSW_ACT_Cursive({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  adjustFontFallback: false,
+});
 const montserrat = Montserrat({ subsets: ["latin"], weight: ["700"] });
 
 type RichLetterCardProps = {
@@ -56,7 +60,7 @@ export function RichLetterCard({ message, reduceMotion = false }: RichLetterCard
             <div className="h-px flex-1 bg-rose-200/70" />
           </div>
 
-          <div className={caveat.className + " whitespace-pre-wrap text-[16px] leading-[1.9] text-zinc-800 sm:text-2xl"} style={{ overflow: "hidden", maxHeight: "calc(min(72dvh, 520px) - 60px)" }}>
+          <div className={eduCursive.className + " whitespace-pre-wrap text-[16px] leading-[1.9] text-zinc-800 sm:text-2xl"} style={{ overflow: "hidden", maxHeight: "calc(min(72dvh, 520px) - 60px)" }}>
             {typed}
             {!reduceMotion && typed.length < safeMessage.length ? (
               <span className="ml-1 inline-block h-6 w-[2px] bg-rose-400 align-middle animate-pulse" />

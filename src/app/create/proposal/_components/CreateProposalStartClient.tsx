@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { savePendingCheckout } from "@/lib/checkout";
+import { generateUuid, saveSurprise } from "@/lib/surprises";
 import { ExperienceShell } from "@/app/create/_components/ExperienceShell";
 import { MobilePreviewFrame } from "@/app/create/_components/MobilePreviewFrame";
 import { CreateProposalNavbar } from "./CreateProposalNavbar";
@@ -99,7 +99,7 @@ export function CreateProposalStartClient() {
                     exit={{ opacity: 0, y: -8 }}
                     transition={{ duration: 0.18 }}
                   >
-                    <h1 className="text-lg font-semibold text-zinc-900">Who is this surprise for?</h1>
+                    <h1 className="text-lg font-semibold text-[rgb(121_29_80)]">Who is this surprise for?</h1>
                     <p className="mt-1 text-sm text-zinc-600">Just their name — we{"'"}ll personalize the vibe.</p>
 
                     <div className="mt-5">
@@ -136,7 +136,7 @@ export function CreateProposalStartClient() {
                     exit={{ opacity: 0, y: -8 }}
                     transition={{ duration: 0.18 }}
                   >
-                    <h2 className="text-lg font-semibold text-zinc-900">Pick a question</h2>
+                    <h2 className="text-lg font-semibold text-[rgb(121_29_80)]">Pick a question</h2>
                     <p className="mt-1 text-sm text-zinc-600">Choose one — or write your own.</p>
 
                     <div className="mt-5 grid gap-3">
@@ -159,7 +159,7 @@ export function CreateProposalStartClient() {
                             }
                           >
                             <div className="flex items-center justify-between gap-3">
-                              <div className="font-medium text-zinc-900">{q.label}</div>
+                              <div className="font-medium text-[rgb(121_29_80)]">{q.label}</div>
                               <div className={"text-sm " + (selected ? "text-rose-600" : "text-rose-300")}>
                                 ♥
                               </div>
@@ -212,7 +212,7 @@ export function CreateProposalStartClient() {
                     exit={{ opacity: 0, y: -8 }}
                     transition={{ duration: 0.18 }}
                   >
-                    <h2 className="text-lg font-semibold text-zinc-900">Here’s the preview</h2>
+                    <h2 className="text-lg font-semibold text-[rgb(121_29_80)]">Here’s the preview</h2>
                     <p className="mt-1 text-sm text-zinc-600">If it feels right, create the magic.</p>
 
                     <div className="mt-6">
@@ -225,7 +225,7 @@ export function CreateProposalStartClient() {
                           question={question}
                           recipient="her"
                           message={personalizedMessage}
-                          yesText="Yes"
+                          yesText="Yes ✨️"
                           noText="No"
                         />
                       </MobilePreviewFrame>
@@ -243,22 +243,23 @@ export function CreateProposalStartClient() {
                       <button
                         type="button"
                         onClick={() => {
-                          savePendingCheckout({
+                          const id = generateUuid();
+                          saveSurprise({
+                            id,
                             type: "proposal",
-                            name: theirName.trim(),
+                            name: theirName.trim() || undefined,
                             question: question.trim(),
                             recipient: "her",
                             message: personalizedMessage.trim(),
-                            yesText: "Yes",
+                            yesText: "Yes ✨️",
                             noText: "No",
                             photoUrl: null,
-                            returnTo: "/create/proposal/start",
                           });
-                          router.push("/payment");
+                          router.push(`/share/${id}`);
                         }}
                         className="inline-flex h-11 items-center justify-center rounded-full bg-rose-600 px-8 text-sm font-semibold text-white shadow-sm shadow-rose-200/50 transition-colors hover:bg-rose-700"
                       >
-                        Create magic at 99rs
+                        Create Magic for Free
                       </button>
                     </div>
                   </motion.div>

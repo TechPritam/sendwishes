@@ -32,7 +32,8 @@ export function VirtualBirthday({ name, age, cakeType, photoUrl, message }: Virt
   const [flame, setFlame] = useState<"lit" | "flicker" | "out">("lit");
   const [listening, setListening] = useState(false);
   const [micError, setMicError] = useState<string | null>(null);
-  const [candlePrimerStage, setCandlePrimerStage] = useState<"preheader" | "softask" | "cake">("preheader");
+  const [candlePrimerStage, setCandlePrimerStage] = useState<"primer" | "cake">("primer");
+  const [requestingMic, setRequestingMic] = useState(false);
   const [tapFallbackAvailable, setTapFallbackAvailable] = useState(false);
   const [smokeKey, setSmokeKey] = useState(0);
   const [cutDone, setCutDone] = useState(false);
@@ -43,6 +44,7 @@ export function VirtualBirthday({ name, age, cakeType, photoUrl, message }: Virt
   const [readyToPop, setReadyToPop] = useState(false);
   const [popHoldDone, setPopHoldDone] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const stopAfterPlayRef = useRef(false);
   const words = useMemo(() => ["YOU", "ARE", "TOTALLY", "AWESOME!"], []);
   const [popped, setPopped] = useState<boolean[]>(() => words.map(() => false));
 
@@ -70,6 +72,11 @@ export function VirtualBirthday({ name, age, cakeType, photoUrl, message }: Virt
     );
   }, [name]);
 
+  const letterMessage = useMemo(() => {
+    if (typeof message === "string" && message.trim().length > 0) return message;
+    return defaultLetterMessage;
+  }, [defaultLetterMessage, message]);
+
   const attemptPlayMusic = useCallback(() => {
     const a = audioRef.current;
     if (!a) return;
@@ -77,6 +84,43 @@ export function VirtualBirthday({ name, age, cakeType, photoUrl, message }: Virt
     if (!musicRequested) return;
     a.play().catch(() => undefined);
   }, [muted, musicRequested]);
+
+  const stopMusicAfterCurrentPlay = useCallback(() => {
+    const a = audioRef.current;
+    if (!a) return;
+    if (stopAfterPlayRef.current) return;
+    stopAfterPlayRef.current = true;
+
+    // Prevent any future replays from our code paths.
+    setMusicRequested(false);
+
+    try {
+      // Let the current iteration finish, then stop.
+      a.loop = false;
+    } catch {
+      // ignore
+    }
+
+    if (a.paused) {
+      try {
+        a.currentTime = 0;
+      } catch {
+        // ignore
+      }
+      return;
+    }
+
+    const onEnded = () => {
+      try {
+        a.pause();
+        a.currentTime = 0;
+      } catch {
+        // ignore
+      }
+    };
+
+    a.addEventListener("ended", onEnded, { once: true });
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -293,34 +337,42 @@ export function VirtualBirthday({ name, age, cakeType, photoUrl, message }: Virt
     if (flame === "out") return;
     setMicError(null);
     setTapFallbackAvailable(false);
-    const hasMedia = typeof navigator !== "undefined" && !!navigator.mediaDevices?.getUserMedia;
-    if (!hasMedia) {
-      setMicError("Microphone not available on this device.");
-      setTapFallbackAvailable(true);
-      return;
-    }
     try {
       const token = listenTokenRef.current + 1;
       listenTokenRef.current = token;
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      streamRef.current = stream;
-      const AudioCtx = getAudioContextConstructor();
-      if (!AudioCtx) {
-        setMicError("Audio engine not available.");
+
+      const hasMedia = typeof navigator !== "undefined" && !!navigator.mediaDevices?.getUserMedia;
+      if (!hasMedia) {
+        setMicError("Microphone not available on this device.");
         setTapFallbackAvailable(true);
-        stopListening();
         return;
       }
-      const ctx = new AudioCtx();
-      audioCtxRef.current = ctx;
-      const source = ctx.createMediaStreamSource(stream);
-      const analyser = ctx.createAnalyser();
-      analyser.fftSize = 1024;
-      analyser.smoothingTimeConstant = 0.7;
-      source.connect(analyser);
-      analyserRef.current = analyser;
-      baselineRef.current = 0.02;
-      lastRmsRef.current = 0;
+
+      // We prepare the analyser on the "Next" screen, but we also tolerate
+      // users skipping it (or the analyser being cleared) and request again.
+      if (!analyserRef.current) {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        streamRef.current = stream;
+        const AudioCtx = getAudioContextConstructor();
+        if (!AudioCtx) {
+          setMicError("Audio engine not available.");
+          setTapFallbackAvailable(true);
+          stopListening();
+          return;
+        }
+        const ctx = new AudioCtx();
+        audioCtxRef.current = ctx;
+        const source = ctx.createMediaStreamSource(stream);
+        const analyser = ctx.createAnalyser();
+        analyser.fftSize = 1024;
+        analyser.smoothingTimeConstant = 0.7;
+        source.connect(analyser);
+        analyserRef.current = analyser;
+        // Start higher to avoid immediate false spikes after permission.
+        baselineRef.current = 0.06;
+        lastRmsRef.current = 0;
+      }
+
       setListening(true);
 
       // If we can't detect a blow quickly, unlock the manual fallback so the
@@ -329,9 +381,20 @@ export function VirtualBirthday({ name, age, cakeType, photoUrl, message }: Virt
         if (listenTokenRef.current !== token) return;
         setTapFallbackAvailable(true);
         stopListening();
-      }, 5000);
+      }, 7000);
 
-      const data = new Uint8Array(analyser.fftSize);
+      const analyserForLoop = analyserRef.current;
+      if (!analyserForLoop) {
+        setMicError("Microphone not ready.");
+        setTapFallbackAvailable(true);
+        stopListening();
+        return;
+      }
+
+      const data = new Uint8Array(analyserForLoop.fftSize);
+      const startedAt = typeof performance !== "undefined" ? performance.now() : Date.now();
+      let consecutiveSpikes = 0;
+
       const tick = () => {
         if (listenTokenRef.current !== token) return;
         const a = analyserRef.current;
@@ -348,8 +411,19 @@ export function VirtualBirthday({ name, age, cakeType, photoUrl, message }: Virt
         baselineRef.current = Math.max(0.005, Math.min(0.08, nextBaseline));
         const lastRms = lastRmsRef.current;
         lastRmsRef.current = rms;
-        const spike = rms > baselineRef.current * 2.6 && rms > 0.07 && rms - lastRms > 0.03;
-        if (spike) {
+
+        const now = typeof performance !== "undefined" ? performance.now() : Date.now();
+        const warmupDone = now - startedAt > (reduceMotion ? 250 : 900);
+        // During warmup, we only learn the baseline so the analyser settles.
+        if (!warmupDone) {
+          rafRef.current = window.requestAnimationFrame(tick);
+          return;
+        }
+
+        const spike = rms > baselineRef.current * 3.0 && rms > 0.09 && rms - lastRms > 0.02;
+        consecutiveSpikes = spike ? consecutiveSpikes + 1 : 0;
+
+        if (consecutiveSpikes >= 2) {
           triggerBlowOut();
           return;
         }
@@ -367,10 +441,54 @@ export function VirtualBirthday({ name, age, cakeType, photoUrl, message }: Virt
     }
   }
 
+  async function prepareMicrophone() {
+    if (typeof window === "undefined") return;
+    setMicError(null);
+    setTapFallbackAvailable(false);
+
+    const hasMedia = typeof navigator !== "undefined" && !!navigator.mediaDevices?.getUserMedia;
+    if (!hasMedia) {
+      setMicError("Microphone not available on this device.");
+      setTapFallbackAvailable(true);
+      return;
+    }
+
+    try {
+      // Clean state before requesting again.
+      stopListening();
+
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      const AudioCtx = getAudioContextConstructor();
+      if (!AudioCtx) {
+        setMicError("Audio engine not available.");
+        setTapFallbackAvailable(true);
+        stopListening();
+        return;
+      }
+      const ctx = new AudioCtx();
+      audioCtxRef.current = ctx;
+      const source = ctx.createMediaStreamSource(stream);
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 1024;
+      analyser.smoothingTimeConstant = 0.7;
+      source.connect(analyser);
+      analyserRef.current = analyser;
+
+      // Higher initial baseline avoids instant false blow-outs.
+      baselineRef.current = 0.06;
+      lastRmsRef.current = 0;
+    } catch {
+      setMicError("Microphone permission denied.");
+      setTapFallbackAvailable(true);
+      stopListening();
+    }
+  }
+
   useEffect(() => {
     if (!readyForCake) return;
     // Permission Primer: when we first reach the cake moment, start at pre-header.
-    setCandlePrimerStage("preheader");
+    setCandlePrimerStage("primer");
     setMicError(null);
     setTapFallbackAvailable(false);
     stopListening();
@@ -410,50 +528,42 @@ export function VirtualBirthday({ name, age, cakeType, photoUrl, message }: Virt
       />
       <PartyConfettiBackground />
       {showEnvelopeLetter ? (
-        <LuxuryEnvelopeLetter message={defaultLetterMessage} reduceMotion={reduceMotion} />
+        <LuxuryEnvelopeLetter
+          message={letterMessage}
+          reduceMotion={reduceMotion}
+          onClose={stopMusicAfterCurrentPlay}
+        />
       ) : showCandlePrimer ? (
         <div className="relative z-20 flex min-h-dvh w-full items-center justify-center px-4" data-testid="candle-primer-shell">
           <div className="w-full max-w-md">
             <div className="rounded-3xl border border-white/20 bg-white/10 p-6 text-center text-white backdrop-blur-xl" data-testid="candle-primer-card">
-              {candlePrimerStage === "preheader" ? (
-                <>
-                  <div className="text-balance text-xl font-semibold">To make your wish come true, we need a little help. Ready to blow out the candles?</div>
-                  <motion.button
-                    type="button"
-                    data-testid="candle-primer-ready"
-                    onClick={() => {
-                      setCandlePrimerStage("softask");
-                      setHasInteracted(true);
-                      attemptPlayMusic();
-                    }}
-                    whileHover={reduceMotion ? undefined : { y: -1 }}
-                    whileTap={reduceMotion ? undefined : { scale: 0.98 }}
-                    className="mt-6 inline-flex h-11 w-full items-center justify-center rounded-full bg-pink-600 px-7 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-pink-700"
-                  >
-                    I&apos;m Ready
-                  </motion.button>
-                </>
-              ) : (
-                <>
-                  <div className="text-balance text-lg font-semibold">We&apos;ll use your microphone to detect your breath. No audio will be recorded or saved. 🔒</div>
-                  <motion.button
-                    type="button"
-                    data-testid="candle-primer-enable"
-                    onClick={() => {
-                      setCandlePrimerStage("cake");
-                      setHasInteracted(true);
-                      setMusicRequested(true);
-                      attemptPlayMusic();
-                      startListeningForBlow().catch(() => undefined);
-                    }}
-                    whileHover={reduceMotion ? undefined : { y: -1 }}
-                    whileTap={reduceMotion ? undefined : { scale: 0.98 }}
-                    className="mt-6 inline-flex h-11 w-full items-center justify-center rounded-full bg-pink-600 px-7 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-pink-700"
-                  >
-                    Enable Microphone
-                  </motion.button>
-                </>
-              )}
+              <div className="font-sans text-balance text-xl font-semibold">
+                Ready to make your wish come true? ✨
+              </div>
+              <p className="mt-3 font-sans text-pretty text-sm text-white/85">
+                 Blow into your mic to put out the candles. We only detect airflow — no audio is saved.
+              </p>
+              <motion.button
+                type="button"
+                data-testid="candle-primer-next"
+                disabled={requestingMic}
+                onClick={async () => {
+                  if (requestingMic) return;
+                  setRequestingMic(true);
+                  setHasInteracted(true);
+                  try {
+                    await prepareMicrophone();
+                  } finally {
+                    setRequestingMic(false);
+                    setCandlePrimerStage("cake");
+                  }
+                }}
+                whileHover={reduceMotion ? undefined : { y: -1 }}
+                whileTap={reduceMotion ? undefined : { scale: 0.98 }}
+                className="mt-6 inline-flex h-11 w-full items-center justify-center rounded-full bg-pink-600 px-7 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-pink-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                 Next
+              </motion.button>
             </div>
           </div>
         </div>
@@ -499,7 +609,7 @@ export function VirtualBirthday({ name, age, cakeType, photoUrl, message }: Virt
                     ) : null}
                         <div className="mt-3 min-h-[20px] sm:min-h-[24px]">
                           {readyForCake && candlePrimerStage === "cake" ? (
-                            <p className={"text-pretty text-sm text-white/70 sm:text-base " + (flame === "lit" ? "opacity-100" : "opacity-0")}>
+                            <p className={"text-pretty text-sm font-black text-white/70 sm:text-base " + (flame === "lit" ? "opacity-100" : "opacity-0")}>
                               Light the candle, make a wish, and tap to blow.
                             </p>
                           ) : null}
@@ -577,7 +687,7 @@ export function VirtualBirthday({ name, age, cakeType, photoUrl, message }: Virt
                   <>
                     <div
                       className={
-                        "mt-6 flex min-h-[44px] w-full flex-col items-center gap-3 transition-opacity sm:flex-row sm:justify-center " +
+                        "mt-5 flex min-h-[44px] w-full flex-col items-center gap-3 transition-opacity sm:flex-row sm:justify-center " +
                         (flame === "out" ? "pointer-events-none opacity-0" : "opacity-100")
                       }
                     >
@@ -598,7 +708,7 @@ export function VirtualBirthday({ name, age, cakeType, photoUrl, message }: Virt
                         disabled={flame !== "lit" || listening}
                         className="inline-flex h-11 w-full items-center justify-center rounded-full bg-pink-600 px-7 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-pink-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
                       >
-                        {micError || tapFallbackAvailable ? "Tap to Blow" : listening ? "Listening… Blow!" : "Ready to Blow"}
+                        {micError || tapFallbackAvailable ? "Tap to Blow" : listening ? "Listening… Blow!" : "Blow the candles"}
                       </motion.button>
                     </div>
 
