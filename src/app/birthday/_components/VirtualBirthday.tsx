@@ -8,6 +8,7 @@ import { Volume2, VolumeX } from "lucide-react";
 
 import { PartyConfettiBackground } from "@/components/PartyConfettiBackground";
 import { LuxuryEnvelopeLetter } from "@/components/LuxuryEnvelopeLetter";
+import { registerSendwishesMedia, unregisterSendwishesMedia } from "@/app/_components/PauseMediaOnBackground";
 
 const luckiestGuy = Luckiest_Guy({ weight: "400", subsets: ["latin"] });
 
@@ -129,9 +130,11 @@ export function VirtualBirthday({ name, age, cakeType, photoUrl, message }: Virt
     a.preload = "auto";
     a.volume = 0.35;
     a.muted = muted;
+    registerSendwishesMedia(a);
     audioRef.current = a;
     return () => {
       try { a.pause(); } catch { }
+      unregisterSendwishesMedia(a);
       audioRef.current = null;
     };
   }, []);
@@ -157,9 +160,13 @@ export function VirtualBirthday({ name, age, cakeType, photoUrl, message }: Virt
 
     document.addEventListener("visibilitychange", onVisibilityChange);
     window.addEventListener("pagehide", pauseAudio);
+    window.addEventListener("blur", pauseAudio);
+    document.addEventListener("freeze" as unknown as "visibilitychange", pauseAudio);
     return () => {
       document.removeEventListener("visibilitychange", onVisibilityChange);
       window.removeEventListener("pagehide", pauseAudio);
+      window.removeEventListener("blur", pauseAudio);
+      document.removeEventListener("freeze" as unknown as "visibilitychange", pauseAudio);
     };
   }, []);
 

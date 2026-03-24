@@ -5,6 +5,7 @@ import confetti from "canvas-confetti";
 import { Luckiest_Guy } from "next/font/google";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LuxuryEnvelopeLetterPreview } from "./LuxuryEnvelopeLetterPreview";
+import { registerSendwishesMedia, unregisterSendwishesMedia } from "@/app/_components/PauseMediaOnBackground";
 
 const luckiestGuy = Luckiest_Guy({ weight: "400", subsets: ["latin"] });
 
@@ -69,6 +70,7 @@ export function BirthdayPhonePreview({ message, name }: { message?: string; name
     a.loop = true;
     a.preload = "auto";
     a.volume = 0.35;
+    registerSendwishesMedia(a);
     audioRef.current = a;
     return () => {
       try {
@@ -77,6 +79,7 @@ export function BirthdayPhonePreview({ message, name }: { message?: string; name
       } catch {
         // ignore
       }
+      unregisterSendwishesMedia(a);
       audioRef.current = null;
     };
   }, []);
@@ -87,6 +90,7 @@ export function BirthdayPhonePreview({ message, name }: { message?: string; name
     a.loop = false;
     a.preload = "auto";
     a.volume = 1;
+    registerSendwishesMedia(a);
     yayRef.current = a;
     return () => {
       try {
@@ -95,6 +99,7 @@ export function BirthdayPhonePreview({ message, name }: { message?: string; name
       } catch {
         // ignore
       }
+      unregisterSendwishesMedia(a);
       yayRef.current = null;
     };
   }, []);
@@ -130,9 +135,13 @@ export function BirthdayPhonePreview({ message, name }: { message?: string; name
 
     document.addEventListener("visibilitychange", onVisibilityChange);
     window.addEventListener("pagehide", pauseAllAudio);
+    window.addEventListener("blur", pauseAllAudio);
+    document.addEventListener("freeze" as unknown as "visibilitychange", pauseAllAudio);
     return () => {
       document.removeEventListener("visibilitychange", onVisibilityChange);
       window.removeEventListener("pagehide", pauseAllAudio);
+      window.removeEventListener("blur", pauseAllAudio);
+      document.removeEventListener("freeze" as unknown as "visibilitychange", pauseAllAudio);
     };
   }, []);
 

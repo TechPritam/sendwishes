@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { FloatingHearts } from "@/components/FloatingHearts";
+import { PauseMediaOnBackground } from "./_components/PauseMediaOnBackground";
 
 export const metadata: Metadata = {
   title: "SendWishes — A digital gift made with heart",
@@ -20,6 +21,7 @@ export default function RootLayout({
       >
         <div className="relative min-h-dvh">
           <FloatingHearts />
+          <PauseMediaOnBackground />
           <div className="relative">{children}</div>
         </div>
       </body>

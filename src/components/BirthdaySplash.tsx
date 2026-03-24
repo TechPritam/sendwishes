@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { PartyConfettiBackground } from "@/components/PartyConfettiBackground";
+import { registerSendwishesMedia, unregisterSendwishesMedia } from "@/app/_components/PauseMediaOnBackground";
 
 type BirthdaySplashProps = {
   gifSrc?: string;
@@ -38,6 +39,7 @@ export function BirthdaySplash({
     a.loop = false;
     a.preload = "auto";
     a.volume = 1;
+    registerSendwishesMedia(a);
     audioRef.current = a;
     debug("audio created", { src: audioSrc });
     return a;
@@ -74,6 +76,7 @@ export function BirthdaySplash({
       } catch {
         // ignore
       }
+      unregisterSendwishesMedia(a);
       audioRef.current = null;
       startedRef.current = false;
     };
@@ -103,9 +106,13 @@ export function BirthdaySplash({
 
     document.addEventListener("visibilitychange", onVisibilityChange);
     window.addEventListener("pagehide", pauseAudio);
+    window.addEventListener("blur", pauseAudio);
+    document.addEventListener("freeze" as unknown as "visibilitychange", pauseAudio);
     return () => {
       document.removeEventListener("visibilitychange", onVisibilityChange);
       window.removeEventListener("pagehide", pauseAudio);
+      window.removeEventListener("blur", pauseAudio);
+      document.removeEventListener("freeze" as unknown as "visibilitychange", pauseAudio);
     };
   }, []);
 
