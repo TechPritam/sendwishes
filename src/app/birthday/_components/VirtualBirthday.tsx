@@ -8,7 +8,12 @@ import { Volume2, VolumeX } from "lucide-react";
 
 import { PartyConfettiBackground } from "@/components/PartyConfettiBackground";
 import { LuxuryEnvelopeLetter } from "@/components/LuxuryEnvelopeLetter";
-import { registerSendwishesMedia, unregisterSendwishesMedia } from "@/app/_components/PauseMediaOnBackground";
+import {
+  registerSendwishesAudioContext,
+  registerSendwishesMedia,
+  unregisterSendwishesAudioContext,
+  unregisterSendwishesMedia,
+} from "@/app/_components/PauseMediaOnBackground";
 
 const luckiestGuy = Luckiest_Guy({ weight: "400", subsets: ["latin"] });
 
@@ -113,6 +118,7 @@ export function VirtualBirthday({ name, age, cakeType, photoUrl, message }: Virt
 
     const onEnded = () => {
       try {
+        a.muted = true;
         a.pause();
         a.currentTime = 0;
       } catch {
@@ -133,7 +139,12 @@ export function VirtualBirthday({ name, age, cakeType, photoUrl, message }: Virt
     registerSendwishesMedia(a);
     audioRef.current = a;
     return () => {
-      try { a.pause(); } catch { }
+      try {
+        a.muted = true;
+        a.pause();
+      } catch {
+        // ignore
+      }
       unregisterSendwishesMedia(a);
       audioRef.current = null;
     };
@@ -146,7 +157,26 @@ export function VirtualBirthday({ name, age, cakeType, photoUrl, message }: Virt
       const a = audioRef.current;
       if (!a) return;
       try {
+        const prevMuted = a.muted;
+        a.muted = true;
         a.pause();
+        window.setTimeout(() => {
+          try {
+            if (!a.paused) return;
+            a.muted = prevMuted;
+          } catch {
+            // ignore
+          }
+        }, 250);
+      } catch {
+        // ignore
+      }
+
+      try {
+        if (typeof navigator !== "undefined" && "mediaSession" in navigator) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (navigator as any).mediaSession.playbackState = "paused";
+        }
       } catch {
         // ignore
       }
@@ -211,7 +241,12 @@ export function VirtualBirthday({ name, age, cakeType, photoUrl, message }: Virt
     if (!a) return;
     a.muted = muted;
     if (muted) {
-      a.pause();
+      try {
+        a.muted = true;
+        a.pause();
+      } catch {
+        // ignore
+      }
       return;
     }
     if (hasInteracted && musicRequested) {
@@ -225,6 +260,7 @@ export function VirtualBirthday({ name, age, cakeType, photoUrl, message }: Virt
       const AudioCtx = getAudioContextConstructor();
       if (!AudioCtx) return;
       const ctx = new AudioCtx();
+      registerSendwishesAudioContext(ctx);
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = "square";
@@ -237,7 +273,10 @@ export function VirtualBirthday({ name, age, cakeType, photoUrl, message }: Virt
       gain.connect(ctx.destination);
       osc.start();
       osc.stop(ctx.currentTime + 0.09);
-      osc.onended = () => { ctx.close().catch(() => undefined); };
+      osc.onended = () => {
+        unregisterSendwishesAudioContext(ctx);
+        ctx.close().catch(() => undefined);
+      };
     } catch { }
   }
 
@@ -247,6 +286,7 @@ export function VirtualBirthday({ name, age, cakeType, photoUrl, message }: Virt
       const AudioCtx = getAudioContextConstructor();
       if (!AudioCtx) return;
       const ctx = new AudioCtx();
+      registerSendwishesAudioContext(ctx);
       const duration = 1.6;
       const bufferSize = Math.floor(ctx.sampleRate * duration);
       const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
@@ -278,7 +318,10 @@ export function VirtualBirthday({ name, age, cakeType, photoUrl, message }: Virt
       gain.connect(ctx.destination);
       src.start();
       src.stop(ctx.currentTime + duration);
-      src.onended = () => { ctx.close().catch(() => undefined); };
+      src.onended = () => {
+        unregisterSendwishesAudioContext(ctx);
+        ctx.close().catch(() => undefined);
+      };
     } catch { }
   }
 
@@ -314,6 +357,7 @@ export function VirtualBirthday({ name, age, cakeType, photoUrl, message }: Virt
       streamRef.current = null;
     }
     if (audioCtxRef.current) {
+      unregisterSendwishesAudioContext(audioCtxRef.current);
       audioCtxRef.current.close().catch(() => undefined);
       audioCtxRef.current = null;
     }
@@ -396,6 +440,7 @@ export function VirtualBirthday({ name, age, cakeType, photoUrl, message }: Virt
         }
         const ctx = new AudioCtx();
         audioCtxRef.current = ctx;
+        registerSendwishesAudioContext(ctx);
         const source = ctx.createMediaStreamSource(stream);
         const analyser = ctx.createAnalyser();
         analyser.fftSize = 1024;
@@ -502,6 +547,7 @@ export function VirtualBirthday({ name, age, cakeType, photoUrl, message }: Virt
       }
       const ctx = new AudioCtx();
       audioCtxRef.current = ctx;
+      registerSendwishesAudioContext(ctx);
       const source = ctx.createMediaStreamSource(stream);
       const analyser = ctx.createAnalyser();
       analyser.fftSize = 1024;

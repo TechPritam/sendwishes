@@ -71,6 +71,7 @@ export function BirthdaySplash({
 
     return () => {
       try {
+        a.muted = true;
         a.pause();
         a.currentTime = 0;
       } catch {
@@ -90,10 +91,30 @@ export function BirthdaySplash({
       const a = audioRef.current;
       if (!a) return;
       try {
+        const prevMuted = a.muted;
+        a.muted = true;
         a.pause();
+        window.setTimeout(() => {
+          try {
+            if (!a.paused) return;
+            a.muted = prevMuted;
+          } catch {
+            // ignore
+          }
+        }, 250);
       } catch {
         // ignore
       }
+
+      try {
+        if (typeof navigator !== "undefined" && "mediaSession" in navigator) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (navigator as any).mediaSession.playbackState = "paused";
+        }
+      } catch {
+        // ignore
+      }
+
       // Allow replay when the user comes back and interacts again.
       startedRef.current = false;
     };
