@@ -81,6 +81,35 @@ export function BirthdaySplash({
   }, [audioSrc]);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const pauseAudio = () => {
+      const a = audioRef.current;
+      if (!a) return;
+      try {
+        a.pause();
+      } catch {
+        // ignore
+      }
+      // Allow replay when the user comes back and interacts again.
+      startedRef.current = false;
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        pauseAudio();
+      }
+    };
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("pagehide", pauseAudio);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("pagehide", pauseAudio);
+    };
+  }, []);
+
+  useEffect(() => {
     if (stage !== "gif") return;
     completedRef.current = false;
     const a = ensureAudio();

@@ -100,6 +100,43 @@ export function BirthdayPhonePreview({ message, name }: { message?: string; name
   }, []);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const pauseAllAudio = () => {
+      const music = audioRef.current;
+      if (music) {
+        try {
+          music.pause();
+        } catch {
+          // ignore
+        }
+      }
+
+      const yay = yayRef.current;
+      if (yay) {
+        try {
+          yay.pause();
+        } catch {
+          // ignore
+        }
+      }
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        pauseAllAudio();
+      }
+    };
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("pagehide", pauseAllAudio);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("pagehide", pauseAllAudio);
+    };
+  }, []);
+
+  useEffect(() => {
     const a = audioRef.current;
     if (!a) return;
 

@@ -137,6 +137,33 @@ export function VirtualBirthday({ name, age, cakeType, photoUrl, message }: Virt
   }, []);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const pauseAudio = () => {
+      const a = audioRef.current;
+      if (!a) return;
+      try {
+        a.pause();
+      } catch {
+        // ignore
+      }
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        pauseAudio();
+      }
+    };
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("pagehide", pauseAudio);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("pagehide", pauseAudio);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!readyToPop) return;
     if (typeof window === "undefined") return;
 
