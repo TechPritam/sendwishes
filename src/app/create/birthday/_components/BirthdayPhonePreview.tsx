@@ -74,7 +74,6 @@ export function BirthdayPhonePreview({ message, name }: { message?: string; name
     audioRef.current = a;
     return () => {
       try {
-        a.muted = true;
         a.pause();
         a.currentTime = 0;
       } catch {
@@ -95,7 +94,6 @@ export function BirthdayPhonePreview({ message, name }: { message?: string; name
     yayRef.current = a;
     return () => {
       try {
-        a.muted = true;
         a.pause();
         a.currentTime = 0;
       } catch {
@@ -113,17 +111,7 @@ export function BirthdayPhonePreview({ message, name }: { message?: string; name
       const music = audioRef.current;
       if (music) {
         try {
-          const prevMuted = music.muted;
-          music.muted = true;
           music.pause();
-          window.setTimeout(() => {
-            try {
-              if (!music.paused) return;
-              music.muted = prevMuted;
-            } catch {
-              // ignore
-            }
-          }, 250);
         } catch {
           // ignore
         }
@@ -132,30 +120,10 @@ export function BirthdayPhonePreview({ message, name }: { message?: string; name
       const yay = yayRef.current;
       if (yay) {
         try {
-          const prevMuted = yay.muted;
-          yay.muted = true;
           yay.pause();
-          window.setTimeout(() => {
-            try {
-              if (!yay.paused) return;
-              yay.muted = prevMuted;
-            } catch {
-              // ignore
-            }
-          }, 250);
         } catch {
           // ignore
         }
-      }
-
-      // Best-effort: reflect the paused state to OS media controls.
-      try {
-        if (typeof navigator !== "undefined" && "mediaSession" in navigator) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (navigator as any).mediaSession.playbackState = "paused";
-        }
-      } catch {
-        // ignore
       }
     };
 
