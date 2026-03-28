@@ -49,7 +49,7 @@ export function CreateBirthdayLandingClient() {
           </div>
 
           <div className="lg:col-start-2 lg:row-start-1 lg:row-span-2">
-            <MobilePreviewFrame title="Birthday" subtitle="Preview" background={<BirthdayPreviewBackground />}>
+            <MobilePreviewFrame title="Birthday" removePadding subtitle="Preview" background={<BirthdayPreviewBackground />}>
               <BirthdayPhonePreview />
             </MobilePreviewFrame>
           </div>

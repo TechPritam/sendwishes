@@ -8,9 +8,10 @@ import { Volume2, VolumeX } from "lucide-react";
 
 import { PartyConfettiBackground } from "@/components/PartyConfettiBackground";
 import { LuxuryEnvelopeLetter } from "@/components/LuxuryEnvelopeLetter";
-import { registerSendwishesMedia, unregisterSendwishesMedia } from "@/app/_components/PauseMediaOnBackground";
 
 const luckiestGuy = Luckiest_Guy({ weight: "400", subsets: ["latin"] });
+
+const BGM_BASE_VOLUME = 0.35;
 
 type AudioContextConstructor = typeof AudioContext;
 
@@ -30,12 +31,12 @@ type VirtualBirthdayProps = {
 
 export function VirtualBirthday({ name, age, cakeType, photoUrl, message }: VirtualBirthdayProps) {
   const reduceMotion: boolean = useReducedMotion() ?? false;
+  const showMicDebug = process.env.NODE_ENV !== "production";
   const [flame, setFlame] = useState<"lit" | "flicker" | "out">("lit");
   const [listening, setListening] = useState(false);
   const [micError, setMicError] = useState<string | null>(null);
   const [candlePrimerStage, setCandlePrimerStage] = useState<"primer" | "cake">("primer");
   const [requestingMic, setRequestingMic] = useState(false);
-  const [tapFallbackAvailable, setTapFallbackAvailable] = useState(false);
   const [smokeKey, setSmokeKey] = useState(0);
   const [cutDone, setCutDone] = useState(false);
   const [postBlowStage, setPostBlowStage] = useState<"smoke" | "cut">("smoke");
@@ -45,9 +46,86 @@ export function VirtualBirthday({ name, age, cakeType, photoUrl, message }: Virt
   const [readyToPop, setReadyToPop] = useState(false);
   const [popHoldDone, setPopHoldDone] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const bgmDuckCountRef = useRef(0);
+  const bgmPrevVolumeRef = useRef<number | null>(null);
+  const bgmPrevWasPlayingRef = useRef<boolean>(false);
   const stopAfterPlayRef = useRef(false);
   const words = useMemo(() => ["YOU", "ARE", "TOTALLY", "AWESOME!"], []);
   const [popped, setPopped] = useState<boolean[]>(() => words.map(() => false));
+
+  const beginDuckBgmForMic = useCallback(() => {
+    const a = audioRef.current;
+    if (!a) return;
+    if (muted) return;
+    bgmDuckCountRef.current += 1;
+    if (bgmDuckCountRef.current !== 1) return;
+
+    bgmPrevVolumeRef.current = a.volume;
+    bgmPrevWasPlayingRef.current = !a.paused;
+
+    try {
+      a.muted = false;
+      a.volume = Math.min(a.volume, 0.06);
+      if (musicRequested) {
+        a.play().catch(() => undefined);
+      }
+    } catch {
+      // ignore
+    }
+  }, [muted, musicRequested]);
+
+  const endDuckBgmForMic = useCallback(() => {
+    const a = audioRef.current;
+    if (!a) {
+      bgmDuckCountRef.current = 0;
+      bgmPrevVolumeRef.current = null;
+      bgmPrevWasPlayingRef.current = false;
+      return;
+    }
+
+    if (bgmDuckCountRef.current <= 0) return;
+    bgmDuckCountRef.current -= 1;
+    if (bgmDuckCountRef.current !== 0) return;
+
+    const prevVolume = bgmPrevVolumeRef.current;
+    const prevWasPlaying = bgmPrevWasPlayingRef.current;
+
+    bgmPrevVolumeRef.current = null;
+    bgmPrevWasPlayingRef.current = false;
+
+    // If the user manually muted, keep it muted.
+    if (muted) {
+      try {
+        a.muted = true;
+        a.pause();
+      } catch {
+        // ignore
+      }
+      return;
+    }
+
+    try {
+      a.muted = false;
+      a.volume = typeof prevVolume === "number" ? prevVolume : BGM_BASE_VOLUME;
+    } catch {
+      // ignore
+    }
+
+    if (musicRequested && (prevWasPlaying || hasInteracted)) {
+      a.play().catch(() => undefined);
+    }
+  }, [hasInteracted, muted, musicRequested]);
+
+  const getMicStream = useCallback(async () => {
+    return navigator.mediaDevices.getUserMedia({
+      audio: {
+        channelCount: 1,
+        echoCancellation: false,
+        noiseSuppression: false,
+        autoGainControl: false,
+      },
+    });
+  }, []);
 
   const allPopped = popped.every(Boolean);
   const readyForCake = allPopped && popHoldDone;
@@ -128,73 +206,19 @@ export function VirtualBirthday({ name, age, cakeType, photoUrl, message }: Virt
     const a = new Audio("/assets/hbd.mp3");
     a.loop = true;
     a.preload = "auto";
-    a.volume = 0.35;
-    a.muted = muted;
-    registerSendwishesMedia(a);
+    a.volume = BGM_BASE_VOLUME;
+    a.muted = false;
     audioRef.current = a;
     return () => {
       try { a.pause(); } catch { }
-      unregisterSendwishesMedia(a);
       audioRef.current = null;
     };
   }, []);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const pauseAudio = () => {
-      const a = audioRef.current;
-      if (!a) return;
-      try {
-        a.pause();
-      } catch {
-        // ignore
-      }
-    };
-
-    const onVisibilityChange = () => {
-      if (document.visibilityState === "hidden") {
-        pauseAudio();
-      }
-    };
-
-    document.addEventListener("visibilitychange", onVisibilityChange);
-    window.addEventListener("pagehide", pauseAudio);
-    window.addEventListener("blur", pauseAudio);
-    document.addEventListener("freeze" as unknown as "visibilitychange", pauseAudio);
-    return () => {
-      document.removeEventListener("visibilitychange", onVisibilityChange);
-      window.removeEventListener("pagehide", pauseAudio);
-      window.removeEventListener("blur", pauseAudio);
-      document.removeEventListener("freeze" as unknown as "visibilitychange", pauseAudio);
-    };
-  }, []);
-
-  useEffect(() => {
     if (!readyToPop) return;
-    if (typeof window === "undefined") return;
-
-    // Reset balloons for a clean automated sequence.
-    setPopped(words.map(() => false));
     setPopHoldDone(false);
-
-    // Let the balloons finish their flight first, then pop one-by-one.
-    const baseDelay = reduceMotion ? 250 : 1900;
-    const gap = reduceMotion ? 420 : 1500;
-    const timers: number[] = [];
-
-    for (let i = 0; i < words.length; i += 1) {
-      timers.push(
-        window.setTimeout(() => {
-          popBalloon(i);
-        }, baseDelay + i * gap)
-      );
-    }
-
-    return () => {
-      for (const t of timers) window.clearTimeout(t);
-    };
-  }, [readyToPop, reduceMotion, words]);
+  }, [readyToPop]);
 
   useEffect(() => {
     if (!allPopped) {
@@ -285,12 +309,34 @@ export function VirtualBirthday({ name, age, cakeType, photoUrl, message }: Virt
   const streamRef = useRef<MediaStream | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
+  const micSinkRef = useRef<{ gain: GainNode } | null>(null);
   const rafRef = useRef<number | null>(null);
   const listenTimeoutRef = useRef<number | null>(null);
-  const tapFallbackTimerRef = useRef<number | null>(null);
+  const autoBlowTimerRef = useRef<number | null>(null);
+  const debugLastUpdateRef = useRef<number>(0);
+  const [micDebug, setMicDebug] = useState<{
+    rms: number;
+    baseline: number;
+    delta: number;
+    spike: boolean;
+    consecutiveSpikes: number;
+    ctxState: string;
+  } | null>(null);
   const baselineRef = useRef<number>(0);
   const lastRmsRef = useRef<number>(0);
   const listenTokenRef = useRef<number>(0);
+
+  const resumeMicAudioContext = useCallback(async () => {
+    const ctx = audioCtxRef.current;
+    if (!ctx) return false;
+    if ((ctx.state as unknown as string) === "running") return true;
+    try {
+      await ctx.resume();
+    } catch {
+      // ignore
+    }
+    return (ctx.state as unknown as string) === "running";
+  }, []);
 
   const stopListening = useCallback(() => {
     listenTokenRef.current += 1;
@@ -304,9 +350,9 @@ export function VirtualBirthday({ name, age, cakeType, photoUrl, message }: Virt
         window.clearTimeout(listenTimeoutRef.current);
         listenTimeoutRef.current = null;
       }
-      if (tapFallbackTimerRef.current !== null) {
-        window.clearTimeout(tapFallbackTimerRef.current);
-        tapFallbackTimerRef.current = null;
+      if (autoBlowTimerRef.current !== null) {
+        window.clearTimeout(autoBlowTimerRef.current);
+        autoBlowTimerRef.current = null;
       }
     }
     if (streamRef.current) {
@@ -317,10 +363,14 @@ export function VirtualBirthday({ name, age, cakeType, photoUrl, message }: Virt
       audioCtxRef.current.close().catch(() => undefined);
       audioCtxRef.current = null;
     }
+    micSinkRef.current = null;
     analyserRef.current = null;
     baselineRef.current = 0;
     lastRmsRef.current = 0;
-  }, []);
+
+    // Always restore BGM after mic use.
+    endDuckBgmForMic();
+  }, [endDuckBgmForMic]);
 
   function heartConfettiExplosion() {
     const anyConfetti = confetti as unknown as {
@@ -341,11 +391,10 @@ export function VirtualBirthday({ name, age, cakeType, photoUrl, message }: Virt
     window.setTimeout(() => burst(200, 110, 52, 1.0), 520);
   }
 
-  function triggerBlowOut() {
+  const triggerBlowOut = useCallback(() => {
     if (flame === "out" || flame === "flicker") return;
     stopListening();
     setMicError(null);
-    setTapFallbackAvailable(false);
     setCutDone(false);
     setPostBlowStage("smoke");
     setFlame("flicker");
@@ -357,41 +406,49 @@ export function VirtualBirthday({ name, age, cakeType, photoUrl, message }: Virt
       setSmokeKey((k) => k + 1);
     }, reduceMotion ? 120 : 420);
 
-    // Give smoke a beat before celebration/cut.
     window.setTimeout(() => {
       setPostBlowStage("cut");
       if (typeof window !== "undefined") heartConfettiExplosion();
       playCheers();
     }, reduceMotion ? 240 : 1420);
-  }
+  }, [flame, heartConfettiExplosion, playCheers, reduceMotion, stopListening]);
 
-  async function startListeningForBlow() {
+  const startListeningForBlow = useCallback(async () => {
     if (typeof window === "undefined") return;
     if (listening) return;
     if (flame === "out") return;
     setMicError(null);
-    setTapFallbackAvailable(false);
     try {
+      beginDuckBgmForMic();
       const token = listenTokenRef.current + 1;
       listenTokenRef.current = token;
+
+      if (autoBlowTimerRef.current !== null) {
+        window.clearTimeout(autoBlowTimerRef.current);
+        autoBlowTimerRef.current = null;
+      }
+
+      autoBlowTimerRef.current = window.setTimeout(() => {
+        if (listenTokenRef.current !== token) return;
+        triggerBlowOut();
+      }, 4000);
 
       const hasMedia = typeof navigator !== "undefined" && !!navigator.mediaDevices?.getUserMedia;
       if (!hasMedia) {
         setMicError("Microphone not available on this device.");
-        setTapFallbackAvailable(true);
         return;
       }
 
-      // We prepare the analyser on the "Next" screen, but we also tolerate
-      // users skipping it (or the analyser being cleared) and request again.
       if (!analyserRef.current) {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const stream = await getMicStream();
         streamRef.current = stream;
         const AudioCtx = getAudioContextConstructor();
         if (!AudioCtx) {
           setMicError("Audio engine not available.");
-          setTapFallbackAvailable(true);
-          stopListening();
+          if (streamRef.current) {
+            for (const track of streamRef.current.getTracks()) track.stop();
+            streamRef.current = null;
+          }
           return;
         }
         const ctx = new AudioCtx();
@@ -399,36 +456,44 @@ export function VirtualBirthday({ name, age, cakeType, photoUrl, message }: Virt
         const source = ctx.createMediaStreamSource(stream);
         const analyser = ctx.createAnalyser();
         analyser.fftSize = 1024;
-        analyser.smoothingTimeConstant = 0.7;
+        analyser.smoothingTimeConstant = 0.35;
         source.connect(analyser);
         analyserRef.current = analyser;
-        // Start higher to avoid immediate false spikes after permission.
+        const gain = ctx.createGain();
+        gain.gain.value = 0;
+        analyser.connect(gain);
+        gain.connect(ctx.destination);
+        micSinkRef.current = { gain };
         baselineRef.current = 0.06;
         lastRmsRef.current = 0;
       }
 
-      setListening(true);
+      const resumed = await resumeMicAudioContext();
+      if (!resumed) {
+        setMicError("Tap once to enable microphone.");
+        return;
+      }
 
-      // If we can't detect a blow quickly, unlock the manual fallback so the
-      // experience never gets stuck.
-      tapFallbackTimerRef.current = window.setTimeout(() => {
-        if (listenTokenRef.current !== token) return;
-        setTapFallbackAvailable(true);
-        stopListening();
-      }, 7000);
+      setListening(true);
 
       const analyserForLoop = analyserRef.current;
       if (!analyserForLoop) {
         setMicError("Microphone not ready.");
-        setTapFallbackAvailable(true);
-        stopListening();
+        if (streamRef.current) {
+          for (const track of streamRef.current.getTracks()) track.stop();
+          streamRef.current = null;
+        }
+        if (audioCtxRef.current) {
+          audioCtxRef.current.close().catch(() => undefined);
+          audioCtxRef.current = null;
+        }
+        analyserRef.current = null;
         return;
       }
 
       const data = new Uint8Array(analyserForLoop.fftSize);
       const startedAt = typeof performance !== "undefined" ? performance.now() : Date.now();
       let consecutiveSpikes = 0;
-
       const tick = () => {
         if (listenTokenRef.current !== token) return;
         const a = analyserRef.current;
@@ -441,21 +506,38 @@ export function VirtualBirthday({ name, age, cakeType, photoUrl, message }: Virt
         }
         const rms = Math.sqrt(sum / data.length);
         const baseline = baselineRef.current;
-        const nextBaseline = baseline * 0.92 + rms * 0.08;
+        const nextBaseline = baseline * 0.97 + rms * 0.03;
         baselineRef.current = Math.max(0.005, Math.min(0.08, nextBaseline));
         const lastRms = lastRmsRef.current;
         lastRmsRef.current = rms;
 
         const now = typeof performance !== "undefined" ? performance.now() : Date.now();
-        const warmupDone = now - startedAt > (reduceMotion ? 250 : 900);
-        // During warmup, we only learn the baseline so the analyser settles.
+        const warmupDone = now - startedAt > (reduceMotion ? 160 : 360);
         if (!warmupDone) {
           rafRef.current = window.requestAnimationFrame(tick);
           return;
         }
 
-        const spike = rms > baselineRef.current * 3.0 && rms > 0.09 && rms - lastRms > 0.02;
+        const baselineNow = baselineRef.current;
+        const delta = rms - lastRms;
+        const spike = rms > Math.max(0.02, baselineNow * 1.6) && (delta > 0.004 || rms > 0.06);
         consecutiveSpikes = spike ? consecutiveSpikes + 1 : 0;
+
+        if (showMicDebug) {
+          const dbgNow = typeof performance !== "undefined" ? performance.now() : Date.now();
+          if (dbgNow - debugLastUpdateRef.current > 200) {
+            debugLastUpdateRef.current = dbgNow;
+            const ctxState = audioCtxRef.current?.state ?? "unknown";
+            setMicDebug({
+              rms,
+              baseline: baselineNow,
+              delta,
+              spike,
+              consecutiveSpikes,
+              ctxState,
+            });
+          }
+        }
 
         if (consecutiveSpikes >= 2) {
           triggerBlowOut();
@@ -470,20 +552,16 @@ export function VirtualBirthday({ name, age, cakeType, photoUrl, message }: Virt
       }, 18000);
     } catch {
       setMicError("Microphone permission denied.");
-      setTapFallbackAvailable(true);
-      stopListening();
     }
-  }
+  }, [beginDuckBgmForMic, flame, getMicStream, listening, reduceMotion, resumeMicAudioContext, showMicDebug, stopListening, triggerBlowOut]);
 
   async function prepareMicrophone() {
     if (typeof window === "undefined") return;
     setMicError(null);
-    setTapFallbackAvailable(false);
 
     const hasMedia = typeof navigator !== "undefined" && !!navigator.mediaDevices?.getUserMedia;
     if (!hasMedia) {
       setMicError("Microphone not available on this device.");
-      setTapFallbackAvailable(true);
       return;
     }
 
@@ -491,12 +569,14 @@ export function VirtualBirthday({ name, age, cakeType, photoUrl, message }: Virt
       // Clean state before requesting again.
       stopListening();
 
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Duck *after* stopListening() so the duck persists through permission.
+      beginDuckBgmForMic();
+
+      const stream = await getMicStream();
       streamRef.current = stream;
       const AudioCtx = getAudioContextConstructor();
       if (!AudioCtx) {
         setMicError("Audio engine not available.");
-        setTapFallbackAvailable(true);
         stopListening();
         return;
       }
@@ -505,17 +585,26 @@ export function VirtualBirthday({ name, age, cakeType, photoUrl, message }: Virt
       const source = ctx.createMediaStreamSource(stream);
       const analyser = ctx.createAnalyser();
       analyser.fftSize = 1024;
-      analyser.smoothingTimeConstant = 0.7;
+      analyser.smoothingTimeConstant = 0.35;
       source.connect(analyser);
       analyserRef.current = analyser;
+      const gain = ctx.createGain();
+      gain.gain.value = 0;
+      analyser.connect(gain);
+      gain.connect(ctx.destination);
+      micSinkRef.current = { gain };
+
+      await resumeMicAudioContext();
 
       // Higher initial baseline avoids instant false blow-outs.
       baselineRef.current = 0.06;
       lastRmsRef.current = 0;
     } catch {
       setMicError("Microphone permission denied.");
-      setTapFallbackAvailable(true);
       stopListening();
+    } finally {
+      // This step is only a permission primer; restore BGM right away.
+      endDuckBgmForMic();
     }
   }
 
@@ -524,9 +613,16 @@ export function VirtualBirthday({ name, age, cakeType, photoUrl, message }: Virt
     // Permission Primer: when we first reach the cake moment, start at pre-header.
     setCandlePrimerStage("primer");
     setMicError(null);
-    setTapFallbackAvailable(false);
     stopListening();
   }, [readyForCake, stopListening]);
+
+  useEffect(() => {
+    if (!readyForCake) return;
+    if (candlePrimerStage !== "cake") return;
+    if (flame !== "lit") return;
+    // Auto-start listening on the candle screen (no button).
+    startListeningForBlow().catch(() => undefined);
+  }, [candlePrimerStage, flame, readyForCake, startListeningForBlow]);
 
   useEffect(() => {
     return () => stopListening();
@@ -575,7 +671,7 @@ export function VirtualBirthday({ name, age, cakeType, photoUrl, message }: Virt
                 Ready to make your wish come true? ✨
               </div>
               <p className="mt-3 font-sans text-pretty text-sm text-white/85">
-                 Blow into your mic to put out the candles. We only detect airflow — no audio is saved.
+                Blow into your mic to put out the candles. We only detect airflow — no audio is saved.
               </p>
               <motion.button
                 type="button"
@@ -590,13 +686,14 @@ export function VirtualBirthday({ name, age, cakeType, photoUrl, message }: Virt
                   } finally {
                     setRequestingMic(false);
                     setCandlePrimerStage("cake");
+                    startListeningForBlow().catch(() => undefined);
                   }
                 }}
                 whileHover={reduceMotion ? undefined : { y: -1 }}
                 whileTap={reduceMotion ? undefined : { scale: 0.98 }}
                 className="mt-6 inline-flex h-11 w-full items-center justify-center rounded-full bg-pink-600 px-7 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-pink-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                 Next
+                Next
               </motion.button>
             </div>
           </div>
@@ -610,6 +707,15 @@ export function VirtualBirthday({ name, age, cakeType, photoUrl, message }: Virt
               onPointerDownCapture={() => {
                 if (!hasInteracted) setHasInteracted(true);
                 attemptPlayMusic();
+
+                if (readyForCake && candlePrimerStage === "cake" && flame === "lit" && !listening) {
+                  resumeMicAudioContext()
+                    .then((ok) => {
+                      if (!ok) return;
+                      startListeningForBlow().catch(() => undefined);
+                    })
+                    .catch(() => undefined);
+                }
               }}
             >
               {readyForCake && candlePrimerStage === "cake" ? (
@@ -641,13 +747,13 @@ export function VirtualBirthday({ name, age, cakeType, photoUrl, message }: Virt
                         ) : null}
                       </div>
                     ) : null}
-                        <div className="mt-3 min-h-[20px] sm:min-h-[24px]">
-                          {readyForCake && candlePrimerStage === "cake" ? (
-                            <p className={"text-pretty text-sm font-black text-white/70 sm:text-base " + (flame === "lit" ? "opacity-100" : "opacity-0")}>
-                              Light the candle, make a wish, and tap to blow.
-                            </p>
-                          ) : null}
-                        </div>
+                    <div className="mt-3 min-h-[20px] sm:min-h-[24px]">
+                      {readyForCake && candlePrimerStage === "cake" ? (
+                        <p className={"text-pretty text-sm font-black text-white/70 sm:text-base " + (flame === "lit" ? "opacity-100" : "opacity-0")}>
+                          Light the candle, make a wish, and blow into your mic.
+                        </p>
+                      ) : null}
+                    </div>
                   </header>
                 ) : null}
 
@@ -683,7 +789,12 @@ export function VirtualBirthday({ name, age, cakeType, photoUrl, message }: Virt
                           </motion.button>
                         </div>
                       ) : (
-                        <AutoBalloonLine words={words} popped={popped} reduceMotion={reduceMotion} />
+                        <AutoBalloonLine
+                          words={words}
+                          popped={popped}
+                          reduceMotion={reduceMotion}
+                          onPop={popBalloon}
+                        />
                       )}
                     </div>
                   ) : (
@@ -699,7 +810,14 @@ export function VirtualBirthday({ name, age, cakeType, photoUrl, message }: Virt
                           postBlowStage === "cut" ? (
                             cutDone ? null : (
                               <CakeFrame>
-                                <CakeCutStage reduceMotion={reduceMotion} smokeKey={smokeKey} onFinished={() => setCutDone(true)} />
+                                <CakeCutStage
+                                  reduceMotion={reduceMotion}
+                                  smokeKey={smokeKey}
+                                  onFinished={() => {
+                                    setCutDone(true);
+                                    stopMusicAfterCurrentPlay();
+                                  }}
+                                />
                               </CakeFrame>
                             )
                           ) : (
@@ -719,34 +837,21 @@ export function VirtualBirthday({ name, age, cakeType, photoUrl, message }: Virt
 
                 {readyForCake && candlePrimerStage === "cake" ? (
                   <>
-                    <div
-                      className={
-                        "mt-5 flex min-h-[44px] w-full flex-col items-center gap-3 transition-opacity sm:flex-row sm:justify-center " +
-                        (flame === "out" ? "pointer-events-none opacity-0" : "opacity-100")
-                      }
-                    >
-                      <motion.button
-                        type="button"
-                        data-testid="blow-button"
-                        onClick={() => {
-                          if (micError || tapFallbackAvailable) {
-                            triggerBlowOut();
-                            return;
-                          }
-                          startListeningForBlow().catch(() => undefined);
-                          setHasInteracted(true);
-                          attemptPlayMusic();
-                        }}
-                        whileHover={reduceMotion ? undefined : { y: -1 }}
-                        whileTap={reduceMotion ? undefined : { scale: 0.98 }}
-                        disabled={flame !== "lit" || listening}
-                        className="inline-flex h-11 w-full items-center justify-center rounded-full bg-pink-600 px-7 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-pink-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
-                      >
-                        {micError || tapFallbackAvailable ? "Tap to Blow" : listening ? "Listening… Blow!" : "Blow the candles"}
-                      </motion.button>
+                    <div className={"mt-5 min-h-[24px] text-center text-sm font-semibold text-white/80 " + (flame === "out" ? "opacity-0" : "opacity-100")}>
+                      {listening && flame === "lit" ? "Listening… blow now!" : null}
                     </div>
-
-                    <div className={"mt-3 min-h-[16px] text-center text-xs text-white/65 " + (flame === "out" ? "opacity-0" : "opacity-100")}>
+                    {showMicDebug && readyForCake && candlePrimerStage === "cake" && flame !== "out" ? (
+                      <div className="mt-1 min-h-[16px] text-center text-[10px] text-white/55">
+                        {micDebug ? (
+                          <span>
+                            rms {micDebug.rms.toFixed(3)} · base {micDebug.baseline.toFixed(3)} · Δ {micDebug.delta.toFixed(3)} · spike {micDebug.spike ? "1" : "0"} · n {micDebug.consecutiveSpikes} · ctx {micDebug.ctxState}
+                          </span>
+                        ) : (
+                          <span>mic debug: waiting…</span>
+                        )}
+                      </div>
+                    ) : null}
+                    <div className={"mt-2 min-h-[16px] text-center text-xs text-white/65 " + (flame === "out" ? "opacity-0" : "opacity-100")}>
                       {micError ? micError : ""}
                     </div>
                   </>
@@ -781,10 +886,12 @@ function AutoBalloonLine({
   words,
   popped,
   reduceMotion,
+  onPop,
 }: {
   words: string[];
   popped: boolean[];
   reduceMotion: boolean;
+  onPop: (index: number) => void;
 }) {
   const palette = [
     { base: "#fb7185", deep: "#e11d48" },
@@ -850,9 +957,14 @@ function AutoBalloonLine({
                     exit={{ opacity: 0, scale: 1.25 }}
                     transition={{ duration: 0.18, ease: "easeOut" }}
                   >
-                    <div className="flex items-center justify-center">
+                    <button
+                      type="button"
+                      onClick={() => onPop(i)}
+                      className="flex items-center justify-center"
+                      aria-label={`Pop ${word} balloon`}
+                    >
                       <BalloonSvg base={c.base} deep={c.deep} />
-                    </div>
+                    </button>
                   </motion.div>
                 ) : null}
               </AnimatePresence>
@@ -924,7 +1036,7 @@ function Cake({ flame, smokeKey, reduceMotion }: { flame: "lit" | "flicker" | "o
   ], []);
 
   // Thinner candles
-  const candleWidth = 4; 
+  const candleWidth = 4;
   const candleHeight = 56;
 
   return (
@@ -947,19 +1059,19 @@ function Cake({ flame, smokeKey, reduceMotion }: { flame: "lit" | "flicker" | "o
                   initial={{ opacity: 0, scale: 0 }}
                   animate={{ opacity: 1, scale: [1, 1.1, 1], y: [0, -2, 0] }}
                   exit={{ opacity: 0, scale: 0 }}
-                //   transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.1 }}
+                  //   transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.1 }}
                   // Ensure flame is centered on the wick
                   style={{ originX: `${c.x}px`, originY: `${wickTopY}px` }}
                 >
-                    {/* Position the flame path relative to the specific wick top */}
-                  <path 
-                    d={`M ${c.x} ${wickTopY} Q ${c.x + 7} ${wickTopY - 15} ${c.x} ${wickTopY - 25} Q ${c.x - 7} ${wickTopY - 15} ${c.x} ${wickTopY} Z`} 
-                    fill="#fbbf24" 
+                  {/* Position the flame path relative to the specific wick top */}
+                  <path
+                    d={`M ${c.x} ${wickTopY} Q ${c.x + 7} ${wickTopY - 15} ${c.x} ${wickTopY - 25} Q ${c.x - 7} ${wickTopY - 15} ${c.x} ${wickTopY} Z`}
+                    fill="#fbbf24"
                   />
-                  <path 
-                    d={`M ${c.x} ${wickTopY - 2} Q ${c.x + 4} ${wickTopY - 10} ${c.x} ${wickTopY - 18} Q ${c.x - 4} ${wickTopY - 10} ${c.x} ${wickTopY - 2} Z`} 
-                    fill="#fb7185" 
-                    opacity="0.6" 
+                  <path
+                    d={`M ${c.x} ${wickTopY - 2} Q ${c.x + 4} ${wickTopY - 10} ${c.x} ${wickTopY - 18} Q ${c.x - 4} ${wickTopY - 10} ${c.x} ${wickTopY - 2} Z`}
+                    fill="#fb7185"
+                    opacity="0.6"
                   />
                 </motion.g>
               )}

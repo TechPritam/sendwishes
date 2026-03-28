@@ -18,8 +18,9 @@ export function Navbar() {
       { href: "/", label: "Home" },
       { href: "/create/proposal", label: "Proposal" },
       { href: "/create/birthday", label: "Birthday" },
-      { href: "/puzzle", label: "Photo puzzels" },
+      { href: "/puzzle", label: "Photo puzzle" },
       { href: "/create/valentine", label: "Valentine" },
+      { href: "/create/sorry", label: "THE APOLOGY ERA" },
     ];
 
     // On the home page, the Home link is redundant.

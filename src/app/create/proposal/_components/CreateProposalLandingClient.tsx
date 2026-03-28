@@ -52,6 +52,7 @@ export function CreateProposalLandingClient() {
             <MobilePreviewFrame
               title="Proposal"
               subtitle="Preview"
+              removePadding
               background={<ProposalPreviewBackground />}
             >
               <ProposalPhonePreview

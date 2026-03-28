@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Cake, Heart, Puzzle, Sparkles } from "lucide-react";
+import { Cake, Heart, Puzzle, Sparkles, Leaf } from "lucide-react";
 
 function ProductCard({
   title,
@@ -65,28 +65,34 @@ export function MainProducts() {
         </p>
       </div>
 
-      <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <ProductCard
           title="Proposal"
-          description="A playful, unrejectable moment with a big YES." 
+          description="A playful, unrejectable moment with a big YES."
           href="/create/proposal"
           icon={Heart}
         />
         <ProductCard
           title="Birthday"
-          description="Cake, candles, and a mini celebration on-screen." 
+          description="Cake, candles, and a mini celebration on-screen."
           href="/create/birthday"
           icon={Cake}
         />
         <ProductCard
+          title="Apology Era"
+          description="A calm, sincere way to say sorry — and make up."
+          href="/create/sorry"
+          icon={Leaf}
+        />
+        <ProductCard
           title="Valentine"
-          description="A romantic card + optional photo reveal." 
+          description="A romantic card + optional photo reveal."
           href="/create/valentine"
           icon={Sparkles}
         />
         <ProductCard
           title="Photo Puzzle"
-          description="Turn a photo into a little game they must solve." 
+          description="Turn a photo into a little game they must solve."
           href="/puzzle"
           icon={Puzzle}
         />

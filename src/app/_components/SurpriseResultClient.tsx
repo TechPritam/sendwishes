@@ -4,83 +4,87 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
 
-import { getSurprise, type ExperienceType, type SurpriseRecord } from "@/lib/surprises";
 import { ProposalExperience } from "@/app/proposal/_components/ProposalExperience";
 import { PhotoPuzzle } from "@/app/puzzle/_components/PhotoPuzzle";
 import { VirtualBirthday } from "@/app/birthday/_components/VirtualBirthday";
 import { ValentineExperience } from "@/app/valentine/_components/ValentineExperience";
+import { SorryExperience } from "../sorry/_components//SorryExperince";
 import { ExperienceShell } from "@/app/create/_components/ExperienceShell";
 import { BirthdaySplash } from "@/components/BirthdaySplash";
 
-type SurpriseResultClientProps = {
-  expectedType: ExperienceType;
-};
+// Replace with your actual Cloudflare Worker URL
+const API_URL = "https://send-your-wishes-be.send-your-wishes.workers.dev";
 
-function titleFor(t: ExperienceType) {
-  if (t === "proposal") return "Proposal";
-  if (t === "valentine") return "Valentine";
-  if (t === "puzzle") return "Photo Puzzle";
-  return "Birthday";
-}
+type ExperienceType = "proposal" | "valentine" | "puzzle" | "sorry" | "birthday";
 
-export function SurpriseResultClient({ expectedType }: SurpriseResultClientProps) {
+export function SurpriseResultClient({ expectedType }: { expectedType: ExperienceType }) {
   const params = useParams<{ id: string }>();
-  const id = params?.id;
+  const slug = params?.id;
 
-  const [record, setRecord] = useState<SurpriseRecord | null>(null);
-  const [loaded, setLoaded] = useState(false);
+  const [record, setRecord] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [birthdaySplashDone, setBirthdaySplashDone] = useState(false);
 
   useEffect(() => {
-    if (!id) return;
-    const r = getSurprise(id);
-    setRecord(r);
-    setLoaded(true);
-  }, [id]);
+    if (!slug) return;
 
-  useEffect(() => {
-    if (!id) return;
-    setBirthdaySplashDone(false);
-  }, [id]);
+    async function fetchFromCloud() {
+      try {
+        const res = await fetch(`${API_URL}/api/card/${slug}`);
+        if (!res.ok) throw new Error("Not found");
+        const data = await res.json();
+        setRecord(data);
+      } catch (err) {
+        console.error("Fetch magic error:", err);
+        setError(true);
+      } finally {
+        setLoading(false);
+      }
+    }
 
-  const pageTitle = useMemo(() => titleFor(expectedType), [expectedType]);
+    fetchFromCloud();
+  }, [slug]);
 
-  const shellVariant = expectedType === "proposal" || expectedType === "birthday" || expectedType === "valentine"
-    ? expectedType
-    : "valentine";
+  const shellVariant = useMemo(() => 
+    ["proposal", "birthday", "valentine", "sorry"].includes(expectedType) ? expectedType : "valentine"
+  , [expectedType]);
 
   const shellBackground = expectedType === "birthday" ? "midnight" : "default";
 
-  const showBirthdaySplash = expectedType === "birthday" && (!loaded || !birthdaySplashDone);
-
-  if (showBirthdaySplash) {
+  if (expectedType === "birthday" && (!birthdaySplashDone)) {
     return <BirthdaySplash onComplete={() => setBirthdaySplashDone(true)} />;
   }
 
-  if (!loaded) {
+  if (loading) {
     return (
-      <ExperienceShell variant={shellVariant} background={shellBackground}>
-        <div className="mx-auto max-w-3xl px-6 py-16">
-          <div className="glass-card p-8">
-            <div className="text-sm font-medium text-rose-700">Loading…</div>
-          </div>
+      <ExperienceShell variant={shellVariant as any} background={shellBackground}>
+        <div className="flex h-[60vh] items-center justify-center">
+          <motion.div 
+            animate={{ opacity: [0.4, 1, 0.4] }} 
+            transition={{ repeat: Infinity, duration: 1.5 }} 
+            className="text-xl font-bold text-rose-500 tracking-widest"
+          >
+            FETCHING MAGIC...
+          </motion.div>
         </div>
       </ExperienceShell>
     );
   }
 
-  if (!record || record.type !== expectedType) {
+  if (error || !record) {
     return (
-      <ExperienceShell variant={shellVariant} background={shellBackground}>
-        <div className="mx-auto max-w-3xl px-6 py-16">
-          <div className="glass-card p-8">
-            <div className="text-lg font-semibold text-zinc-900">Not found</div>
-            <div className="mt-2 text-sm text-zinc-600">
-              This link isn’t available on this device yet (we’re using localStorage for now).
-            </div>
-            <div className="mt-5 rounded-2xl bg-rose-50/70 p-4 text-sm text-zinc-700 ring-1 ring-rose-200">
-              Tip: Create and pay from the same browser, then open the generated link.
-            </div>
+      <ExperienceShell variant={shellVariant as any} background={shellBackground}>
+        <div className="mx-auto max-w-3xl px-6 py-16 text-center">
+          <div className="glass-card p-10">
+            <h2 className="text-2xl font-bold text-zinc-900">404: Vibe Not Found 💔</h2>
+            <p className="mt-2 text-zinc-600">This link has expired or never existed.</p>
+            <button 
+              onClick={() => window.location.href = '/'} 
+              className="mt-6 inline-block rounded-full bg-rose-600 px-8 py-2 text-white font-semibold transition-all hover:bg-rose-700"
+            >
+              Create New Surprise
+            </button>
           </div>
         </div>
       </ExperienceShell>
@@ -88,35 +92,37 @@ export function SurpriseResultClient({ expectedType }: SurpriseResultClientProps
   }
 
   return (
-    <ExperienceShell variant={shellVariant} background={shellBackground}>
-      <motion.div
-      initial={expectedType === "birthday" ? { opacity: 0 } : { opacity: 0, y: 10 }}
-      animate={expectedType === "birthday" ? { opacity: 1 } : { opacity: 1, y: 0 }}
+    <ExperienceShell variant={shellVariant as any} background={shellBackground}>
+      <motion.div 
+        initial={expectedType === "birthday" ? { opacity: 0 } : { opacity: 0, y: 10 }} 
+        animate={expectedType === "birthday" ? { opacity: 1 } : { opacity: 1, y: 0 }}
         transition={{ duration: 0.35, ease: "easeOut" }}
       >
-        <div className="sr-only">{pageTitle}</div>
-        {record.type === "proposal" ? (
-          <ProposalExperience
-            question={record.question}
-            recipient={record.recipient}
-            message={record.message}
-            yesText={record.yesText}
-            noText={record.noText}
+        <div className="sr-only">{expectedType}</div>
+        {record.type === "proposal" && (
+          <ProposalExperience 
+            question={record.question} 
+            recipient={record.recipient} 
+            message={record.message} 
+            yesText={record.yesText} 
+            noText={record.noText} 
           />
-        ) : record.type === "valentine" ? (
-          <ValentineExperience name={record.name} message={record.message} photoUrl={record.photoUrl} />
-        ) : record.type === "puzzle" ? (
-          <PhotoPuzzle
-            imageUrl={record.photoUrl ?? "/puzzle-photo.svg"}
-            hiddenMessage={record.message}
+        )}
+        {record.type === "sorry" && <SorryExperience name={record.name} reason={record.message} />}
+        {record.type === "valentine" && <ValentineExperience name={record.name} message={record.message} photoUrl={record.photoUrl} />}
+        {record.type === "puzzle" && (
+          <PhotoPuzzle 
+            imageUrl={record.photoUrl ?? "/puzzle-photo.svg"} 
+            hiddenMessage={record.message} 
           />
-        ) : (
-          <VirtualBirthday
-            name={record.name ?? ""}
-            age={record.age}
-            cakeType={record.cakeType}
-            photoUrl={record.photoUrl}
-            message={record.message}
+        )}
+        {record.type === "birthday" && (
+          <VirtualBirthday 
+            name={record.name ?? ""} 
+            age={record.age} 
+            cakeType={record.cakeType} 
+            photoUrl={record.photoUrl} 
+            message={record.message} 
           />
         )}
       </motion.div>

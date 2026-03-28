@@ -8,9 +8,10 @@ type MobilePreviewFrameProps = {
   subtitle?: string;
   background?: ReactNode;
   children: ReactNode;
+  removePadding?: boolean
 };
 
-export function MobilePreviewFrame({ title, subtitle, background, children }: MobilePreviewFrameProps) {
+export function MobilePreviewFrame({ title, subtitle, background, children, removePadding }: MobilePreviewFrameProps) {
   return (
     // <div className="glass-card p-5 sm:p-6">
     <div>
@@ -59,7 +60,7 @@ export function MobilePreviewFrame({ title, subtitle, background, children }: Mo
             </div>
 
             <div className="absolute inset-0 z-10">
-              <div className="h-full w-full p-4 pt-12">
+              <div className={`h-full w-full ${removePadding ? "":"p-4 pt-12"}`}>
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={title}

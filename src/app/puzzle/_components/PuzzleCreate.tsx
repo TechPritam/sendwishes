@@ -29,8 +29,11 @@ export function PuzzleCreate() {
         <h1 className="mt-5 text-balance text-3xl font-semibold tracking-tight text-zinc-900 sm:text-5xl">
           Upload a photo
         </h1>
-        <p className="mt-3 text-pretty text-sm text-zinc-600 sm:text-base">
+        {/* <p className="mt-3 text-pretty text-sm text-zinc-600 sm:text-base">
           Add a hidden message, then pay to generate a unique puzzle link.
+        </p> */}
+         <p className="mt-3 text-pretty text-sm text-zinc-600 sm:text-base">
+         This feature is coming soon !
         </p>
       </header>
 
@@ -93,7 +96,8 @@ export function PuzzleCreate() {
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
           <button
             type="button"
-            disabled={!canContinue}
+            // disabled={!canContinue}
+            disabled={true}
             onClick={() => {
               if (!canContinue) return;
               savePendingCheckout({

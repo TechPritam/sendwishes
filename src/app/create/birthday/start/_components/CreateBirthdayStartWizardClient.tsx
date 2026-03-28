@@ -2,13 +2,15 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Loader2 } from "lucide-react";
 import { ExperienceShell } from "@/app/create/_components/ExperienceShell";
 import { MobilePreviewFrame } from "@/app/create/_components/MobilePreviewFrame";
 import { BirthdayPreviewBackground } from "@/app/create/birthday/_components/BirthdayPreviewBackground";
 import { BirthdayPhonePreview } from "@/app/create/birthday/_components/BirthdayPhonePreview";
-import { generateUuid, saveSurprise } from "@/lib/surprises";
 import { FloatingStarsBackground } from "@/components/FloatingStarsBackground";
+
+// UPDATE THIS URL to your Cloudflare Worker URL
+const API_URL = "https://send-your-wishes-be.send-your-wishes.workers.dev";
 
 type Step = "name" | "date" | "letter" | "preview" | "payment";
 
@@ -64,9 +66,7 @@ function Modal({ children }: { children: React.ReactNode }) {
 export function CreateBirthdayStartWizardClient() {
   const router = useRouter();
   const [step, setStep] = useState<Step>("name");
-
-  const backPillClass =
-    "inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-semibold text-white/85 ring-1 ring-white/15 backdrop-blur transition-colors hover:bg-white/15";
+  const [isCreating, setIsCreating] = useState(false);
 
   function goBackFrom(current: Step) {
     if (current === "name") {
@@ -113,9 +113,47 @@ export function CreateBirthdayStartWizardClient() {
 
     const prefill = buildPrefillLetter(birthdayPerson, day, month === "" ? undefined : month);
     setLetter(prefill);
-    // Intentionally keep letterTouched=false, so users can still get a fresh prefill
-    // if they go back and change earlier steps.
   }, [birthdayPerson, day, letterTouched, month, step]);
+
+  async function handleFinish(isPaid: boolean) {
+    if (isCreating) return;
+    setIsCreating(true);
+
+    const draftId = crypto.randomUUID();
+    const config = {
+      type: "birthday",
+      name: birthdayPerson.trim() || undefined,
+      message: letter,
+      photoUrl: null,
+      day,
+      month,
+    };
+
+    try {
+      // 1. Save Draft
+      await fetch(`${API_URL}/api/save-draft`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: draftId, type: "birthday", config }),
+      });
+
+      // 2. Activate Link (Free logic)
+      const res = await fetch(`${API_URL}/api/activate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ draftId, orderId: isPaid ? `PAID-${draftId}` : `FREE-${draftId}` }),
+      });
+
+      if (!res.ok) throw new Error("Activation failed");
+      
+      const { slug } = await res.json();
+      router.push(`/share/${slug}`);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to connect to magic server. Try again.");
+      setIsCreating(false);
+    }
+  }
 
   return (
     <ExperienceShell variant="birthday" background="midnight" align="center" paddingY="none">
@@ -184,27 +222,19 @@ export function CreateBirthdayStartWizardClient() {
                 <p className="mt-2 text-sm text-white/70">This is how the full surprise will look.</p>
 
                 <div className="mt-4">
-                  <MobilePreviewFrame title="Birthday" subtitle="Preview" background={<BirthdayPreviewBackground />}>
+                  <MobilePreviewFrame removePadding title="Birthday" subtitle="Preview" background={<BirthdayPreviewBackground />}>
                     <BirthdayPhonePreview message={letter} name={birthdayPerson} />
                   </MobilePreviewFrame>
                 </div>
 
                 <button
                   type="button"
-                  onClick={() => {
-                    const id = generateUuid();
-                    saveSurprise({
-                      id,
-                      type: "birthday",
-                      name: birthdayPerson.trim() || undefined,
-                      message: letter,
-                      photoUrl: null,
-                    });
-                    router.push(`/share/${id}`);
-                  }}
-                  className="mt-4 inline-flex h-12 w-full items-center justify-center rounded-full bg-pink-600 px-8 text-base font-semibold text-white shadow-[0_0_18px_rgba(255,255,255,0.18)] transition-all hover:bg-pink-700"
+                  disabled={isCreating}
+                  onClick={() => handleFinish(false)}
+                  className="mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-pink-600 px-8 text-base font-semibold text-white shadow-[0_0_18px_rgba(255,255,255,0.18)] transition-all hover:bg-pink-700 disabled:opacity-60"
                 >
-                  Create Magic for Free
+                  {isCreating ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
+                  {isCreating ? "Creating Magic..." : "Create Magic for Free"}
                 </button>
               </div>
             </div>
@@ -238,21 +268,11 @@ export function CreateBirthdayStartWizardClient() {
 
               <button
                 type="button"
-                disabled={!canPay}
-                onClick={() => {
-                  if (!canPay) return;
-                  const id = generateUuid();
-                  saveSurprise({
-                    id,
-                    type: "birthday",
-                    name: birthdayPerson.trim() || undefined,
-                    message: letter,
-                    photoUrl: null,
-                  });
-                  router.push(`/share/${id}`);
-                }}
-                className="mt-4 inline-flex h-12 w-full items-center justify-center rounded-full bg-pink-600 px-8 text-base font-semibold text-white shadow-[0_0_18px_rgba(255,255,255,0.18)] transition-all hover:bg-pink-700 disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={!canPay || isCreating}
+                onClick={() => handleFinish(true)}
+                className="mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-pink-600 px-8 text-base font-semibold text-white shadow-[0_0_18px_rgba(255,255,255,0.18)] transition-all hover:bg-pink-700 disabled:opacity-60"
               >
+                {isCreating ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
                 Pay ₹99
               </button>
             </div>

@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { FloatingHeartsBackground } from "@/components/FloatingHeartsBackground";
 
-type ExperienceVariant = "valentine" | "birthday" | "proposal";
+type ExperienceVariant = "valentine" | "birthday" | "proposal" | "sorry";
 
 type ExperienceShellProps = {
   variant: ExperienceVariant;
@@ -22,6 +22,9 @@ function shellClass(variant: ExperienceVariant, background: ExperienceShellProps
   }
   if (variant === "birthday") {
     return "min-h-dvh bg-gradient-to-br from-amber-50 via-white to-rose-50";
+  }
+  if (variant === "sorry") {
+    return "min-h-dvh bg-gradient-to-br from-emerald-50 via-sky-50 to-stone-50";
   }
   return "min-h-dvh bg-gradient-to-br from-rose-50 via-white to-pink-50";
 }

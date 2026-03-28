@@ -25,24 +25,30 @@ export default function Home() {
                 on repeat.
               </h6>
 
-              <div className="m-14 grid gap-3 sm:grid-cols-3">
+              <div className="m-14 grid gap-3 sm:grid-cols-4">
                 <Link
                   href="/create/proposal"
                   className="inline-flex items-center justify-center rounded-2xl border border-rose-200 bg-white/70 px-5 py-4 text-sm font-semibold text-rose-700 ring-1 ring-white/30 transition-colors hover:bg-rose-50"
                 >
-                  The Perfect Proposal
+                  The Perfect Proposal  💍
                 </Link>
                 <Link
                   href="/create/birthday"
                   className="inline-flex items-center justify-center rounded-2xl border border-rose-200 bg-white/70 px-5 py-4 text-sm font-semibold text-rose-700 ring-1 ring-white/30 transition-colors hover:bg-rose-50"
                 >
-                  Virtual Birthday Bash
+                  Virtual Birthday Bash  🎂
+                </Link>
+                <Link
+                  href="/create/sorry"
+                  className="inline-flex items-center justify-center rounded-2xl border border-rose-200 bg-white/70 px-5 py-4 text-sm font-semibold text-rose-700 ring-1 ring-white/30 transition-colors hover:bg-rose-50"
+                >
+                  THE APOLOGY ERA  🎀
                 </Link>
                 <Link
                   href="/puzzle"
                   className="inline-flex items-center justify-center rounded-2xl border border-rose-200 bg-white/70 px-5 py-4 text-sm font-semibold text-rose-700 ring-1 ring-white/30 transition-colors hover:bg-rose-50"
                 >
-                  Surprise Photo Puzzle
+                  Surprise Photo Puzzle  🧩
                 </Link>
               </div>
             </div>

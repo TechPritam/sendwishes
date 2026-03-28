@@ -4,34 +4,28 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
 import { ExperienceShell } from "@/app/create/_components/ExperienceShell";
-import { buildExperienceUrl, getSurprise, type ExperienceType, type SurpriseRecord } from "@/lib/surprises";
 
-type ShellVariant = "valentine" | "birthday" | "proposal";
+// UPDATE THIS URL to your Cloudflare Worker URL
+const API_URL = "https://send-your-wishes-be.send-your-wishes.workers.dev";
+
+type ExperienceType = "proposal" | "valentine" | "puzzle" | "sorry" | "birthday";
+type ShellVariant = "valentine" | "birthday" | "proposal" | "sorry";
 
 function shellVariantFor(type: ExperienceType): ShellVariant {
-  if (type === "proposal" || type === "birthday" || type === "valentine") return type;
+  if (type === "proposal" || type === "birthday" || type === "valentine" || type === "sorry") return type;
   return "valentine";
 }
 
 async function copyText(text: string) {
   if (typeof navigator === "undefined") return false;
-  if (navigator.clipboard?.writeText) {
+  try {
     await navigator.clipboard.writeText(text);
     return true;
+  } catch {
+    return false;
   }
-  const el = document.createElement("textarea");
-  el.value = text;
-  el.setAttribute("readonly", "");
-  el.style.position = "fixed";
-  el.style.left = "-9999px";
-  document.body.appendChild(el);
-  el.select();
-  const ok = document.execCommand("copy");
-  document.body.removeChild(el);
-  return ok;
 }
 
-// Cleaner, sharper Heart Logo for the QR center
 function buildHeartDataUri() {
   const svg = `
 <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 24 24">
@@ -42,135 +36,79 @@ function buildHeartDataUri() {
 
 export function ShareClient() {
   const params = useParams<{ id: string }>();
-  const id = params?.id;
+  const slug = params?.id; // This is the unique slug from DB
   const qrWrapRef = useRef<HTMLDivElement | null>(null);
-  const [record, setRecord] = useState<SurpriseRecord | null>(null);
-  const [loaded, setLoaded] = useState(false);
+  
+  const [record, setRecord] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
+
+  // 1. Fetch the record from Cloudflare instead of LocalStorage
+  useEffect(() => {
+    if (!slug) return;
+
+    async function fetchRecord() {
+      try {
+        const res = await fetch(`${API_URL}/api/card/${slug}`);
+        if (!res.ok) throw new Error("Not found");
+        const data = await res.json();
+        setRecord(data);
+      } catch (err) {
+        console.error("Failed to fetch record:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchRecord();
+  }, [slug]);
+
+  // 2. Generate the dynamic share URL based on current domain
+  const shareUrl = useMemo(() => {
+    if (!slug || !record) return "";
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    return `${origin}/${record.type}/${slug}`;
+  }, [slug, record]);
+
+  const heartSrc = useMemo(() => buildHeartDataUri(), []);
+
+  const handleWhatsAppShare = async () => {
+    if (!shareUrl) return;
+    const text = `🎁 I made a surprise for you! 💌\n\nScan the QR 📷 or open the link 🔗:\n${shareUrl}\n\nCan’t wait for you to see it ✨`;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({ text, url: shareUrl });
+      } catch (err) {
+        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+      }
+    } else {
+      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+    }
+  };
 
   const downloadQr = () => {
     const wrap = qrWrapRef.current;
     if (!wrap) return;
-    const svg = wrap.querySelector("svg") as SVGSVGElement | null;
+    const svg = wrap.querySelector("svg");
     if (!svg) return;
-
-    svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
     const xml = new XMLSerializer().serializeToString(svg);
-    const blob = new Blob([xml], { type: "image/svg+xml;charset=utf-8" });
+    const blob = new Blob([xml], { type: "image/svg+xml" });
     const url = URL.createObjectURL(blob);
-
     const a = document.createElement("a");
     a.href = url;
-    a.download = `sendwishes-qr-${id ?? "surprise"}.svg`;
-    document.body.appendChild(a);
+    a.download = `surprise-qr-${slug}.svg`;
     a.click();
-    document.body.removeChild(a);
-
-    window.setTimeout(() => URL.revokeObjectURL(url), 800);
+    URL.revokeObjectURL(url);
   };
 
-  useEffect(() => {
-    if (!id) return;
-    const r = getSurprise(id);
-    setRecord(r);
-    setLoaded(true);
-  }, [id]);
-
-  const shareUrl = useMemo(() => {
-    if (!id || !record) return "";
-    return buildExperienceUrl(record.type, id);
-  }, [id, record]);
-
-  const heartSrc = useMemo(() => buildHeartDataUri(), []);
-
-  const buildShareText = (url: string) => {
-    return (
-      "🎁 I made a surprise for you! 💌\n\n" +
-      "Scan the QR 📷 or open the link 🔗:\n" +
-      `${url}\n\n` +
-      "Can’t wait for you to see it ✨"
-    );
-  };
-
-  const svgToPngFile = async (svgEl: SVGSVGElement, filename: string) => {
-    svgEl.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-    const xml = new XMLSerializer().serializeToString(svgEl);
-    const svgBlob = new Blob([xml], { type: "image/svg+xml;charset=utf-8" });
-    const url = URL.createObjectURL(svgBlob);
-
-    try {
-      const img = new Image();
-      // Helps in some browsers; since we use an object URL, this is safe.
-      img.crossOrigin = "anonymous";
-
-      await new Promise<void>((resolve, reject) => {
-        img.onload = () => resolve();
-        img.onerror = () => reject(new Error("Failed to load SVG image"));
-        img.src = url;
-      });
-
-      const size = 1024;
-      const canvas = document.createElement("canvas");
-      canvas.width = size;
-      canvas.height = size;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) throw new Error("Canvas not available");
-
-      // White background for WhatsApp readability.
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, size, size);
-      ctx.drawImage(img, 0, 0, size, size);
-
-      const blob: Blob = await new Promise((resolve, reject) => {
-        canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("Failed to render PNG"))), "image/png");
-      });
-
-      return new File([blob], filename, { type: "image/png" });
-    } finally {
-      URL.revokeObjectURL(url);
-    }
-  };
-
-  const handleWhatsAppShare = async () => {
-    if (!shareUrl) return;
-    const text = buildShareText(shareUrl);
-
-    // Best experience on mobile: share text + QR image via native share sheet.
-    if (typeof navigator !== "undefined" && "share" in navigator) {
-      try {
-        const wrap = qrWrapRef.current;
-        const svg = wrap?.querySelector("svg") as SVGSVGElement | null;
-        if (svg) {
-          const file = await svgToPngFile(svg, `sendwishes-qr-${id ?? "surprise"}.png`);
-          const canShareFiles =
-            typeof (navigator as unknown as { canShare?: (d: ShareData) => boolean }).canShare === "function" &&
-            (navigator as unknown as { canShare: (d: ShareData) => boolean }).canShare({ files: [file] });
-
-          if (canShareFiles) {
-            await (navigator as unknown as { share: (d: ShareData) => Promise<void> }).share({
-              text,
-              files: [file],
-            });
-            return;
-          }
-        }
-
-        // Fallback: share text only via share sheet.
-        await (navigator as unknown as { share: (d: ShareData) => Promise<void> }).share({ text });
-        return;
-      } catch {
-        // If user cancels or share fails, fall back to wa.me below.
-      }
-    }
-
-    // Desktop / fallback: WhatsApp web link share (text only).
-    const message = encodeURIComponent(text);
-    window.open(`https://wa.me/?text=${message}`, "_blank");
-  };
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center bg-zinc-50">
+      <div className="animate-pulse text-rose-500 font-bold tracking-widest text-sm">PREPARING YOUR LINK...</div>
+    </div>
+  );
 
   const shellVariant = record ? shellVariantFor(record.type) : "valentine";
-
-  if (!loaded) return null;
 
   return (
     <ExperienceShell variant={shellVariant}>
@@ -183,27 +121,21 @@ export function ShareClient() {
             Send it with <span className="text-rose-500">Love</span>
           </h1>
           <p className="mt-4 text-zinc-500 text-lg">
-            {record?.name
-              ? record.type === "birthday"
-                ? `Birthday surprise for ${record.name} is ready to be shared.`
-                : record.type === "proposal"
-                  ? `Surprise for ${record.name} is ready to be shared.`
-                  : `Your surprise for ${record.name} is ready to be shared.`
+            {record?.name 
+              ? `Your ${record.type} surprise for ${record.name} is ready.` 
               : "Your magic link is ready to be shared."}
           </p>
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
-          {/* Left Side: QR Code Section */}
-          <div className="flex flex-col items-center justify-center p-8 bg-white/40 backdrop-blur-xl border border-white/40 rounded-[2.5rem] shadow-2xl relative overflow-hidden group">
-            {/* <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-rose-400 to-pink-300" /> */}
-            
+          {/* QR Code Section */}
+          <div className="flex flex-col items-center justify-center p-8 bg-white/40 backdrop-blur-xl border border-white/40 rounded-[2.5rem] shadow-2xl overflow-hidden group">
             <div ref={qrWrapRef} className="relative p-6 bg-white rounded-3xl shadow-inner">
               <QRCodeSVG
                 value={shareUrl}
                 size={220}
                 level="H"
-                fgColor="#e11d48" // Solid Rose-600 for high scannability
+                fgColor="#e11d48"
                 marginSize={0}
                 imageSettings={{
                   src: heartSrc,
@@ -213,14 +145,13 @@ export function ShareClient() {
                 }}
               />
             </div>
-            
-            <p className="mt-6 text-rose-800 font-medium text-sm text-center">
-              Scan to preview your craft 💌
+            <p className="mt-6 text-rose-800 font-medium text-sm text-center font-mono">
+              Ready to be scanned 💌
             </p>
           </div>
 
-          {/* Right Side: Sharing Actions */}
-          <div className="flex flex-col gap-4 my-10">
+          {/* Sharing Actions */}
+          <div className="flex flex-col gap-4 my-auto">
             <div className="p-6 bg-white/60 backdrop-blur-lg border border-white/20 rounded-3xl shadow-xl">
               <label className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2 block">
                 Your Unique Link

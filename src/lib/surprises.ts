@@ -1,4 +1,4 @@
-export type ExperienceType = "proposal" | "puzzle" | "birthday" | "valentine";
+export type ExperienceType = "proposal" | "puzzle" | "birthday" | "valentine" | "sorry";
 
 export type SurpriseRecord = {
   id: string;
@@ -21,7 +21,7 @@ export function generateUuid() {
   const cryptoObj: unknown =
     typeof globalThis !== "undefined" && "crypto" in globalThis
       ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (globalThis as any).crypto
+      (globalThis as any).crypto
       : undefined;
 
   if (cryptoObj && typeof cryptoObj === "object" && "randomUUID" in cryptoObj) {

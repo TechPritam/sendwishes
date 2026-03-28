@@ -5,7 +5,7 @@ import confetti from "canvas-confetti";
 import { Luckiest_Guy } from "next/font/google";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LuxuryEnvelopeLetterPreview } from "./LuxuryEnvelopeLetterPreview";
-import { registerSendwishesMedia, unregisterSendwishesMedia } from "@/app/_components/PauseMediaOnBackground";
+import { Play } from "lucide-react";
 
 const luckiestGuy = Luckiest_Guy({ weight: "400", subsets: ["latin"] });
 
@@ -22,6 +22,7 @@ export function BirthdayPhonePreview({ message, name }: { message?: string; name
   const words = useMemo(() => ["YOU", "ARE", "TOTALLY", "AWESOME!"], []);
 
   const [stage, setStage] = useState<Stage>("splash");
+  const [isPlaying, setIsPlaying] = useState(false);
   const [splashTap, setSplashTap] = useState(0);
   const [readyToPop, setReadyToPop] = useState(false);
   const [popped, setPopped] = useState<boolean[]>(() => words.map(() => false));
@@ -40,29 +41,24 @@ export function BirthdayPhonePreview({ message, name }: { message?: string; name
 
   const attemptPlayMusic = useCallback(async () => {
     const a = audioRef.current;
-    if (!a) return;
-    // Browsers may block autoplay; we retry on any user interaction.
+    if (!a || !isPlaying) return;
     try {
       await a.play();
     } catch {
       // ignore
     }
-  }, []);
+  }, [isPlaying]);
 
   const attemptPlayYay = useCallback(async () => {
     const a = yayRef.current;
-    if (!a) return;
+    if (!a || !isPlaying) return;
     try {
       a.currentTime = 0;
-    } catch {
-      // ignore
-    }
-    try {
       await a.play();
     } catch {
       // ignore
     }
-  }, []);
+  }, [isPlaying]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -70,7 +66,6 @@ export function BirthdayPhonePreview({ message, name }: { message?: string; name
     a.loop = true;
     a.preload = "auto";
     a.volume = 0.35;
-    registerSendwishesMedia(a);
     audioRef.current = a;
     return () => {
       try {
@@ -79,7 +74,6 @@ export function BirthdayPhonePreview({ message, name }: { message?: string; name
       } catch {
         // ignore
       }
-      unregisterSendwishesMedia(a);
       audioRef.current = null;
     };
   }, []);
@@ -90,7 +84,6 @@ export function BirthdayPhonePreview({ message, name }: { message?: string; name
     a.loop = false;
     a.preload = "auto";
     a.volume = 1;
-    registerSendwishesMedia(a);
     yayRef.current = a;
     return () => {
       try {
@@ -99,49 +92,7 @@ export function BirthdayPhonePreview({ message, name }: { message?: string; name
       } catch {
         // ignore
       }
-      unregisterSendwishesMedia(a);
       yayRef.current = null;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const pauseAllAudio = () => {
-      const music = audioRef.current;
-      if (music) {
-        try {
-          music.pause();
-        } catch {
-          // ignore
-        }
-      }
-
-      const yay = yayRef.current;
-      if (yay) {
-        try {
-          yay.pause();
-        } catch {
-          // ignore
-        }
-      }
-    };
-
-    const onVisibilityChange = () => {
-      if (document.visibilityState === "hidden") {
-        pauseAllAudio();
-      }
-    };
-
-    document.addEventListener("visibilitychange", onVisibilityChange);
-    window.addEventListener("pagehide", pauseAllAudio);
-    window.addEventListener("blur", pauseAllAudio);
-    document.addEventListener("freeze" as unknown as "visibilitychange", pauseAllAudio);
-    return () => {
-      document.removeEventListener("visibilitychange", onVisibilityChange);
-      window.removeEventListener("pagehide", pauseAllAudio);
-      window.removeEventListener("blur", pauseAllAudio);
-      document.removeEventListener("freeze" as unknown as "visibilitychange", pauseAllAudio);
     };
   }, []);
 
@@ -149,9 +100,8 @@ export function BirthdayPhonePreview({ message, name }: { message?: string; name
     const a = audioRef.current;
     if (!a) return;
 
-    if (stage === "splash" || stage === "gif") {
+    if (!isPlaying || stage === "splash" || stage === "gif") {
       lastPlaybackStageRef.current = null;
-      // Ensure music is OFF before balloons.
       try {
         a.pause();
         a.currentTime = 0;
@@ -162,7 +112,6 @@ export function BirthdayPhonePreview({ message, name }: { message?: string; name
     }
 
     if (stage === "balloons" || stage === "cake" || stage === "envelope") {
-      // Attempt once when entering the playable stages.
       if (lastPlaybackStageRef.current === stage) return;
       lastPlaybackStageRef.current = stage;
       const t = window.setTimeout(() => {
@@ -170,13 +119,13 @@ export function BirthdayPhonePreview({ message, name }: { message?: string; name
       }, 120);
       return () => window.clearTimeout(t);
     }
-  }, [attemptPlayMusic, stage]);
+  }, [attemptPlayMusic, isPlaying, stage]);
 
   useEffect(() => {
     const a = yayRef.current;
     if (!a) return;
 
-    if (stage !== "gif") {
+    if (!isPlaying || stage !== "gif") {
       lastYayStageRef.current = null;
       try {
         a.pause();
@@ -193,28 +142,7 @@ export function BirthdayPhonePreview({ message, name }: { message?: string; name
       attemptPlayYay();
     }, 80);
     return () => window.clearTimeout(t);
-  }, [attemptPlayYay, stage]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const onUserGesture = () => {
-      if (stage === "gif") {
-        attemptPlayYay();
-      }
-      if (stage === "balloons" || stage === "cake" || stage === "envelope") {
-        attemptPlayMusic();
-      }
-    };
-
-    // Typing in form fields (keydown) should also unlock audio.
-    window.addEventListener("pointerdown", onUserGesture, { passive: true });
-    window.addEventListener("keydown", onUserGesture);
-    return () => {
-      window.removeEventListener("pointerdown", onUserGesture);
-      window.removeEventListener("keydown", onUserGesture);
-    };
-  }, [attemptPlayMusic, attemptPlayYay, stage]);
+  }, [attemptPlayYay, isPlaying, stage]);
 
   const heartConfettiExplosion = useCallback(() => {
     if (typeof window === "undefined") return;
@@ -231,7 +159,6 @@ export function BirthdayPhonePreview({ message, name }: { message?: string; name
       ? anyConfettiBase.create(canvas, { useWorker: true })
       : (anyConfettiBase as unknown as (opts: Record<string, unknown>) => void);
 
-    // Ensure canvas fits its CSS box (keeps confetti inside the phone preview).
     if (canvas) {
       const rect = canvas.getBoundingClientRect();
       const w = Math.max(1, Math.round(rect.width));
@@ -273,8 +200,9 @@ export function BirthdayPhonePreview({ message, name }: { message?: string; name
     let cancelled = false;
 
     async function runLoop() {
-      while (!cancelled) {
-        // 1) Splash intro (tap)
+      if (!isPlaying) return;
+
+      while (!cancelled && isPlaying) {
         setStage("splash");
         setSplashTap(0);
         setReadyToPop(false);
@@ -285,22 +213,20 @@ export function BirthdayPhonePreview({ message, name }: { message?: string; name
         setShowWind(false);
 
         await wait(reduceMotion ? 700 : 1600);
-        if (cancelled) return;
+        if (cancelled || !isPlaying) return;
         setSplashTap((n) => n + 1);
         await wait(reduceMotion ? 240 : 520);
-        if (cancelled) return;
+        if (cancelled || !isPlaying) return;
 
-        // 2) Celebration GIF
         setStage("gif");
         await wait(reduceMotion ? 1100 : 4000);
-        if (cancelled) return;
+        if (cancelled || !isPlaying) return;
 
-        // 3) Balloons
         setStage("balloons");
         setReadyToPop(false);
         setPopped(words.map(() => false));
         await wait(reduceMotion ? 600 : 1400);
-        if (cancelled) return;
+        if (cancelled || !isPlaying) return;
         setReadyToPop(true);
         attemptPlayMusic();
 
@@ -308,7 +234,7 @@ export function BirthdayPhonePreview({ message, name }: { message?: string; name
         const gap = reduceMotion ? 260 : 720;
         await wait(baseDelay);
         for (let i = 0; i < words.length; i += 1) {
-          if (cancelled) return;
+          if (cancelled || !isPlaying) return;
           setPopped((prev) => {
             const next = [...prev];
             next[i] = true;
@@ -318,31 +244,30 @@ export function BirthdayPhonePreview({ message, name }: { message?: string; name
         }
 
         await wait(reduceMotion ? 260 : 1500);
-        if (cancelled) return;
+        if (cancelled || !isPlaying) return;
 
-        // 4) Candles + blow + cut
         setStage("cake");
         setFlame("lit");
         setCutDone(false);
         setShowWind(false);
         await wait(reduceMotion ? 650 : 1500);
-        if (cancelled) return;
+        if (cancelled || !isPlaying) return;
 
         setShowWind(true);
         setFlame("flicker");
         await wait(reduceMotion ? 180 : 1560);
-        if (cancelled) return;
+        if (cancelled || !isPlaying) return;
         setFlame("out");
         setSmokeKey((k) => k + 1);
         await wait(reduceMotion ? 520 : 2700);
-        if (cancelled) return;
-        // Let the cut stage finish itself (we also advance on cutDone)
+        if (cancelled || !isPlaying) return;
         await wait(reduceMotion ? 800 : 2500);
-        if (cancelled) return;
+        if (cancelled || !isPlaying) return;
 
-        // 5) Envelope + letter
         setStage("envelope");
         await wait(reduceMotion ? 2200 : 11000);
+        
+        setIsPlaying(false);
       }
     }
 
@@ -350,7 +275,7 @@ export function BirthdayPhonePreview({ message, name }: { message?: string; name
     return () => {
       cancelled = true;
     };
-  }, [reduceMotion, words]);
+  }, [reduceMotion, words, isPlaying, attemptPlayMusic]);
 
   const letterMessage = useMemo(() => {
     if (typeof message === "string" && message.trim().length > 0) return message;
@@ -368,6 +293,31 @@ export function BirthdayPhonePreview({ message, name }: { message?: string; name
       className="relative flex h-full flex-col overflow-hidden"
       data-testid="birthday-phone-preview"
     >
+      <AnimatePresence>
+        {!isPlaying && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-[2px]"
+          >
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setIsPlaying(true)}
+              className="group flex flex-col items-center gap-3 bg-white/90 p-6 rounded-3xl shadow-2xl transition-all"
+            >
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-pink-500 text-white shadow-lg group-hover:bg-pink-600 transition-colors">
+                <Play className="h-6 w-6 fill-current" />
+              </div>
+              <span className="text-sm font-bold text-zinc-800 tracking-tight">
+                {readyToPop || cutDone ? "Watch Again" : "Start Preview"}
+              </span>
+            </motion.button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence mode="wait">
         {stage === "splash" ? (
           <motion.div
@@ -455,7 +405,7 @@ export function BirthdayPhonePreview({ message, name }: { message?: string; name
             className="relative flex h-full flex-col items-center justify-center mt-10"
           >
             <div className="w-full rounded-3xl border border-white/15 bg-white/10 p-4 text-center backdrop-blur">
-              <div className={luckiestGuy.className + " text-2xl tracking-tight text-white"}>
+              <div className={luckiestGuy.className + " text-xl tracking-tight text-white"}>
                 {name?.trim() ? `Happy Birthday, ${name.trim()}!` : "Happy Birthday!"}
               </div>
               <div className="mt-1 text-xs text-white/70">Blow the candles & cut the cake.</div>
