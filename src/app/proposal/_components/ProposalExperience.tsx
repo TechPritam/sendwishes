@@ -148,10 +148,13 @@ export function ProposalExperience({ question, recipient, message, yesText, noTe
     happyAudio.addEventListener("ended", handleEnded);
     happyAudio.play().catch(() => {});
 
-    const anyConfetti = confetti as any;
-    const heartShape = anyConfetti.shapeFromText ? anyConfetti.shapeFromText({ text: "❤", scalar: 1.2 }) : undefined;
-    const burst = (particleCount: number, spread: number, startVelocity: number) => {
-      anyConfetti({
+      const confettiFn = confetti as unknown as {
+        (opts: Record<string, unknown>): void;
+        shapeFromText?: (opts: { text: string; scalar?: number }) => unknown;
+      };
+      const heartShape = confettiFn.shapeFromText ? confettiFn.shapeFromText({ text: "❤", scalar: 1.2 }) : undefined;
+      const burst = (particleCount: number, spread: number, startVelocity: number) => {
+        confettiFn({
         particleCount, spread, startVelocity, scalar: 1, ticks: 260,
         origin: { x: 0.5, y: 0.42 },
         colors: ["#e11d48", "#fb7185", "#fda4af", "#ffffff"],

@@ -39,7 +39,8 @@ export function ShareClient() {
   const slug = params?.id; // This is the unique slug from DB
   const qrWrapRef = useRef<HTMLDivElement | null>(null);
   
-  const [record, setRecord] = useState<any>(null);
+  type RecordType = { type: ExperienceType; name?: string };
+  const [record, setRecord] = useState<RecordType | null>(null);
   const [loading, setLoading] = useState(true);
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
 

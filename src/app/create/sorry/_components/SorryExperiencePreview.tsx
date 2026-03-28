@@ -373,7 +373,7 @@ export function SorryExperiencePreview({ name }: { name?: string; reason?: strin
 
                     {screen === 3 && (
                         <motion.div key="s3" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full flex flex-col items-center">
-                            <img src={SAD_GIFS[gifIdx]} className="h-24 mb-3" />
+                            <img src={SAD_GIFS[gifIdx]} className="h-24 mb-3" alt="Sad gif" />
                                 <motion.h6
                                     className={fredoka.className + " mt-3 mb-3 text-xl font-bold text-zinc-800"}
                                     initial={{ y: 10, opacity: 0 }}
@@ -384,7 +384,7 @@ export function SorryExperiencePreview({ name }: { name?: string; reason?: strin
                                   </motion.h6>
                             <div className="w-full rounded-[2rem] bg-white/40 border border-white p-5 shadow-xl backdrop-blur-sm">
                                 <p className="text-[10px] font-bold text-zinc-800 text-center mb-4 italic px-2">
-                                    "My aura is -10,000 right now. Pick your bribe..."
+                                    &quot;My aura is -10,000 right now. Pick your bribe...&quot;
                                 </p>
                                 <div className="grid grid-cols-2 gap-2">
                                     <div className="aspect-square rounded-2xl border-2 border-pink-400 bg-pink-50 flex flex-col items-center justify-center">
@@ -602,7 +602,7 @@ export function SorryExperiencePreview({ name }: { name?: string; reason?: strin
                             <p className="text-[11px] font-bold text-emerald-800/60 mt-2 px-6">
                                 The tension was 📈, but the love is ♾️
                             </p>
-                            <img src="/assets/bunny-kiss.gif" className="h-28 mx-auto mt-6 rounded-xl" />
+                            <img src="/assets/bunny-kiss.gif" className="h-28 mx-auto mt-6 rounded-xl" alt="Bunny kiss" />
                         </motion.div>
                     )}
 

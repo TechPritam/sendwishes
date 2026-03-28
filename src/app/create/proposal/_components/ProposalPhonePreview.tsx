@@ -184,10 +184,12 @@ export function ProposalPhonePreview({
 
   const onYes = useCallback(() => {
     setAccepted(true);
-    const anyConfetti = confetti as any;
-    const heartShape = anyConfetti.shapeFromText ? anyConfetti.shapeFromText({ text: "❤", scalar: 1.2 }) : undefined;
-    
-    anyConfetti({
+    const confettiFn = confetti as unknown as {
+      (opts: Record<string, unknown>): void;
+      shapeFromText?: (opts: { text: string; scalar?: number }) => unknown;
+    };
+    const heartShape = confettiFn.shapeFromText ? confettiFn.shapeFromText({ text: "❤", scalar: 1.2 }) : undefined;
+    confettiFn({
       particleCount: 80,
       spread: 70,
       origin: { x: 0.5, y: 0.4 },
@@ -247,7 +249,7 @@ export function ProposalPhonePreview({
               <motion.img
                 key={isCrying ? "crying" : "innocent"}
                 src={isCrying ? "/assets/banana-crying-cat.gif" : "/assets/5.act-innocent.gif"}
-                alt="Reaction"
+                alt={isCrying ? "Crying cat" : "Innocent cat"}
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
@@ -289,7 +291,7 @@ export function ProposalPhonePreview({
         <div className="flex h-full flex-col items-start justify-center px-6 py-8 overflow-y-auto custom-scrollbar">
           {/* Headline like Original */}
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="text-sm font-semibold text-rose-900 w-full text-center">
-            I knew you {toName ? `${toName}` : ""} couldn't say No! <span className="text-rose-600 uppercase tracking-tighter">YES !!!</span>
+            I knew you {toName ? `${toName}` : ""} couldn&apos;t say No! <span className="text-rose-600 uppercase tracking-tighter">YES !!!</span>
           </motion.div>
 
           {/* Celebration GIF Box like Original */}
