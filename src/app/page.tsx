@@ -50,6 +50,12 @@ export default function Home() {
                 >
                   Surprise Photo Puzzle  🧩
                 </Link>
+                <Link
+                  href="/create/wedding"
+                  className="inline-flex items-center justify-center rounded-2xl border border-rose-200 bg-white/70 px-5 py-4 text-sm font-semibold text-rose-700 ring-1 ring-white/30 transition-colors hover:bg-rose-50 shadow-sm"
+                >
+                  The Royal Wedding ✨
+                </Link>
               </div>
             </div>
           </div>

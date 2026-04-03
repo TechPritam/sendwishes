@@ -11,19 +11,32 @@ import { ValentineExperience } from "@/app/valentine/_components/ValentineExperi
 import { SorryExperience } from "../sorry/_components/SorryExperince";
 import { ExperienceShell } from "@/app/create/_components/ExperienceShell";
 import { BirthdaySplash } from "@/components/BirthdaySplash";
+import WeddingInvitation from "@/app/create/wedding/_components/WeddingInvitation";
 
 // Replace with your actual Cloudflare Worker URL
 const API_URL = "https://send-your-wishes-be.send-your-wishes.workers.dev";
 
 
-type ExperienceType = "proposal" | "valentine" | "puzzle" | "sorry" | "birthday";
+type ExperienceType = "proposal" | "valentine" | "puzzle" | "sorry" | "birthday" | "wedding";
 
 type RecordType =
   | { type: "proposal"; question: string; recipient: string; message: string; yesText: string; noText: string }
   | { type: "sorry"; name: string; message: string }
   | { type: "valentine"; name: string; message: string; photoUrl?: string }
   | { type: "puzzle"; photoUrl?: string; message: string }
-  | { type: "birthday"; name?: string; age?: number; cakeType?: string; photoUrl?: string; message?: string };
+  | { type: "birthday"; name?: string; age?: number; cakeType?: string; photoUrl?: string; message?: string }
+  | {
+      type: "wedding";
+      name?: string;
+      groom: string;
+      bride: string;
+      date: string;
+      time: string;
+      location: string;
+      heroImage?: string;
+      gallery?: string[];
+      events?: { name: string; date: string; time: string; image: string }[];
+    };
 
 
 export function SurpriseResultClient({ expectedType }: { expectedType: ExperienceType }) {
@@ -106,7 +119,7 @@ export function SurpriseResultClient({ expectedType }: { expectedType: Experienc
   }
 
   return (
-    <ExperienceShell variant={shellVariant} background={shellBackground}>
+    <ExperienceShell variant={shellVariant} background={shellBackground} paddingY={expectedType === "wedding" ? "none" : "default"}>
       <motion.div 
         initial={expectedType === "birthday" ? { opacity: 0 } : { opacity: 0, y: 10 }} 
         animate={expectedType === "birthday" ? { opacity: 1 } : { opacity: 1, y: 0 }}
@@ -139,6 +152,20 @@ export function SurpriseResultClient({ expectedType }: { expectedType: Experienc
             cakeType={"cakeType" in record ? record.cakeType : undefined} 
             photoUrl={"photoUrl" in record ? record.photoUrl : undefined} 
             message={"message" in record ? record.message : undefined} 
+          />
+        )}
+        {record.type === "wedding" && (
+          <WeddingInvitation
+            details={{
+              groom: record.groom,
+              bride: record.bride,
+              date: record.date,
+              time: record.time,
+              location: record.location,
+              heroImage: record.heroImage,
+              gallery: record.gallery,
+              events: record.events,
+            }}
           />
         )}
       </motion.div>

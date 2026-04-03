@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { FloatingHearts } from "@/components/FloatingHearts";
-import { PauseMediaOnBackground } from "./_components/PauseMediaOnBackground";
+import { playfair, greatVibes, inter } from "./fonts";
 
 export const metadata: Metadata = {
   title: "SendWishes — A digital gift made with heart",
@@ -17,11 +17,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className="font-sans antialiased min-h-dvh bg-gradient-to-b from-rose-50 via-pink-50 to-white"
+        className={`${playfair.className} ${greatVibes.className} ${inter.className} font-sans antialiased min-h-dvh bg-gradient-to-b from-rose-50 via-pink-50 to-white`}
       >
         <div className="relative min-h-dvh">
           <FloatingHearts />
-          <PauseMediaOnBackground />
           <div className="relative">{children}</div>
         </div>
       </body>

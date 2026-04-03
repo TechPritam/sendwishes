@@ -8,8 +8,8 @@ import { ExperienceShell } from "@/app/create/_components/ExperienceShell";
 // UPDATE THIS URL to your Cloudflare Worker URL
 const API_URL = "https://send-your-wishes-be.send-your-wishes.workers.dev";
 
-type ExperienceType = "proposal" | "valentine" | "puzzle" | "sorry" | "birthday";
-type ShellVariant = "valentine" | "birthday" | "proposal" | "sorry";
+type ExperienceType = "proposal" | "valentine" | "puzzle" | "sorry" | "birthday" | "wedding";
+type ShellVariant = "valentine" | "birthday" | "proposal" | "sorry" ;
 
 function shellVariantFor(type: ExperienceType): ShellVariant {
   if (type === "proposal" || type === "birthday" || type === "valentine" || type === "sorry") return type;
