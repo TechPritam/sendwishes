@@ -22,24 +22,18 @@ interface WeddingDetails {
 }
 
 const FALLBACK_CAROUSEL_IMAGES = [
-  "/assets/wedding.jpg",
+  "https://images.unsplash.com/photo-1583939003579-730e3918a45a",
   "https://images.unsplash.com/photo-1519741497674-611481863552",
   "https://images.unsplash.com/photo-1511285560929-80b456fea0bc",
+  "https://images.unsplash.com/photo-1522673607200-1c9488bb5963",
 ];
 
-// Animation Variant for Text Reveal
 const textReveal: Variants = {
-  hidden: { 
-    opacity: 0, 
-    y: 30 
-  },
+  hidden: { opacity: 0, y: 30 },
   visible: { 
     opacity: 1, 
     y: 0, 
-    transition: { 
-      duration: 1.2, 
-      ease: [0.22, 1, 0.36, 1] 
-    } 
+    transition: { duration: 1.2, ease: [0.22, 1, 0.36, 1] } 
   }
 };
 
@@ -47,6 +41,15 @@ export default function WeddingInvitation({ details }: { details: WeddingDetails
   const [hasOpened, setHasOpened] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [imgIndex, setImgIndex] = useState(0);
+
+  const carouselImages = useMemo(() => {
+    const userImages = (details.gallery || []).filter(Boolean);
+    return userImages.length > 0 ? userImages : FALLBACK_CAROUSEL_IMAGES;
+  }, [details.gallery]);
+
+  // Triple the images for the infinite web reel effect
+  const extendedImages = [...carouselImages, ...carouselImages, ...carouselImages];
 
   const handleStartExperience = () => {
     setHasOpened(true);
@@ -62,36 +65,22 @@ export default function WeddingInvitation({ details }: { details: WeddingDetails
     }
   };
 
-  const [imgIndex, setImgIndex] = useState(0);
-
-  const carouselImages = useMemo(() => {
-    const userImages = (details.gallery || []).filter(Boolean);
-    return userImages.length > 0 ? userImages : FALLBACK_CAROUSEL_IMAGES;
-  }, [details.gallery]);
-
-  useEffect(() => {
-    setImgIndex((prev) => Math.min(prev, Math.max(0, carouselImages.length - 1)));
-  }, [carouselImages.length]);
-
   useEffect(() => {
     if (carouselImages.length <= 1) return;
-
-    // Increased to 6 seconds for a premium, relaxed feel
     const imgTimer = setInterval(() => {
       setImgIndex((prev) => (prev + 1) % carouselImages.length);
-    }, 3000);
+    }, 4000);
     return () => clearInterval(imgTimer);
   }, [carouselImages.length]);
 
   const formattedDate = new Date(details.date).toLocaleDateString("en-US", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
+    weekday: "long", year: "numeric", month: "long", day: "numeric",
   });
 
   return (
     <div className="bg-[#FDFBF7] min-h-screen relative selection:bg-rose-100 selection:text-rose-900 overflow-x-hidden font-sans">
+      {/* 1. PAPER TEXTURE OVERLAY */}
+      <div className="fixed inset-0 opacity-[0.03] pointer-events-none z-[60] bg-[url('https://www.transparenttextures.com/patterns/paper-fibers.png')]" />
 
       <audio ref={audioRef} src="/assets/din-shagna-daa_.mp3" loop />
 
@@ -116,14 +105,14 @@ export default function WeddingInvitation({ details }: { details: WeddingDetails
           animate={hasOpened ? { y: 0, opacity: 1 } : { y: 80, opacity: 0 }}
           transition={{ duration: 1.5, ease: "easeOut" }}
         >
-          <section className="mt-20 px-6">
+          <section className="mt-20 px-6 max-w-7xl mx-auto">
             <Countdown targetDate={details.date} groom={details.groom} bride={details.bride} />
           </section>
 
           {/* SAVE THE DATE SECTION */}
           <section className="py-24 bg-white flex flex-col items-center rounded-t-[3rem] relative z-10 shadow-[0_-20px_50px_rgba(0,0,0,0.02)]">
             <motion.h2 
-              variants={textReveal} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }}
+              variants={textReveal} initial="hidden" whileInView="visible" viewport={{ once: true }}
               className="font-serif text-3xl text-rose-900 mb-12 italic underline underline-offset-8"
             >
               Save the Date
@@ -141,155 +130,113 @@ export default function WeddingInvitation({ details }: { details: WeddingDetails
           </section>
 
           {details.events && details.events.length > 0 && (
-            <EventTimeline events={details.events} />
+            <div className="max-w-7xl mx-auto">
+              <EventTimeline events={details.events} />
+            </div>
           )}
 
-        
-
           {/* OUR STORY / GALLERY SECTION */}
-          <div className="mt-24 w-full">
+          <div className="mt-32 w-full overflow-hidden">
             <div className="text-center px-6 mb-16">
-              <motion.span 
-                initial={{ opacity: 0, letterSpacing: "0.2em" }}
-                whileInView={{ opacity: 1, letterSpacing: "0.4em" }}
-                transition={{ duration: 1.5 }}
-                viewport={{ once: true }}
-                className="text-rose-400 uppercase text-[10px] font-bold mb-4 block"
-              >
-                A Journey of Love
-              </motion.span>
-              <motion.h2 
-                variants={textReveal} 
-                initial="hidden" 
-                whileInView="visible" 
-                viewport={{ once: true }}
-                className="font-serif text-4xl md:text-6xl text-rose-900 italic leading-tight"
-              >
-                Moments Wrapped in Time
-              </motion.h2>
+              <span className="text-rose-400 uppercase text-[10px] tracking-[0.5em] font-bold mb-4 block">A Journey of Love</span>
+              <h2 className="font-serif text-4xl md:text-6xl text-rose-900 italic leading-tight">Moments Wrapped in Time</h2>
             </div>
 
-            {/* Wide Cinematic Slider */}
-            <div className="relative group px-10 md:px-12">
-              <motion.div 
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 1 }}
-                transition={{ duration: 2 }}
-                viewport={{ once: true }}
-                className="relative w-full max-w-7xl mx-auto h-[55vh] md:h-[75vh] overflow-hidden shadow-[0_30px_100px_rgba(0,0,0,0.1)] bg-rose-50/20 rounded-none md:rounded-sm"
-              >
+            {/* --- WEB VIEW: INFINITE FILM REEL --- */}
+            <div className="hidden md:block relative w-full h-[70vh]">
+              {/* Spacing Containers: 25% Side Spacing */}
+              <div className="absolute inset-y-0 left-0 w-1/4 bg-gradient-to-r from-[#FDFBF7] to-transparent z-20 pointer-events-none" />
+              <div className="absolute inset-y-0 right-0 w-1/4 bg-gradient-to-l from-[#FDFBF7] to-transparent z-20 pointer-events-none" />
+
+              {/* The 50% Stage */}
+              <div className="flex items-center justify-center h-full overflow-hidden px-[25%]">
+                 <motion.div 
+                  className="flex gap-8 cursor-grab active:cursor-grabbing"
+                  animate={{ x: ["0%", "-50%"] }}
+                  transition={{ 
+                    duration: 40, 
+                    repeat: Infinity, 
+                    ease: "linear" 
+                  }}
+                 >
+                   {extendedImages.map((img, idx) => (
+                     <div key={idx} className="relative flex-shrink-0 w-[25vw] h-[55vh] group">
+                        {/* Background Shadow Card */}
+                        <div className="absolute inset-0 bg-white shadow-xl rounded-sm border border-rose-50 -rotate-2 group-hover:rotate-0 transition-transform duration-700" />
+                        {/* Main Image Frame */}
+                        <div className="absolute inset-0 bg-white p-3 shadow-sm border border-rose-100 rotate-1 group-hover:rotate-0 transition-transform duration-700">
+                          <img 
+                            src={img} 
+                            className="w-full h-full object-cover grayscale-[20%] group-hover:grayscale-0 transition-all duration-700" 
+                            alt={`Gallery ${idx}`} 
+                          />
+                        </div>
+                     </div>
+                   ))}
+                 </motion.div>
+              </div>
+            </div>
+
+            {/* --- MOBILE VIEW: CINEMATIC SLIDER --- */}
+            <div className="md:hidden relative group px-6">
+              <div className="relative w-full aspect-[3/4] overflow-hidden shadow-2xl rounded-sm border-4 border-white">
                 <AnimatePresence mode="popLayout">
                   <motion.div
                     key={imgIndex}
-                    initial={{ opacity: 0, x: 50, scale: 1.05 }}
-                    animate={{ opacity: 1, x: 0, scale: 1 }}
-                    exit={{ opacity: 0, x: -50, scale: 1.05 }}
-                    transition={{ 
-                      duration: 1.8, 
-                      ease: [0.4, 0, 0.2, 1] 
-                    }}
+                    initial={{ opacity: 0, scale: 1.1 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 1.5 }}
                     className="absolute inset-0 w-full h-full"
                   >
-                    <div className="absolute inset-0 bg-rose-900/5 z-10 pointer-events-none mix-blend-multiply" />
-                    <motion.img
-                      src={carouselImages[imgIndex]}
-                      initial={{ scale: 1.1 }}
-                      animate={{ scale: 1 }}
-                      transition={{ 
-                        duration: 10, 
-                        ease: "linear" 
-                      }}
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={carouselImages[imgIndex]} className="w-full h-full object-cover" alt="" />
                   </motion.div>
                 </AnimatePresence>
-
-                {/* Decorative corner accents */}
-                <div className="absolute top-10 left-10 w-16 h-16 border-t border-l border-white/40 z-20" />
-                <div className="absolute bottom-10 right-10 w-16 h-16 border-b border-r border-white/40 z-20" />
-              </motion.div>
-
-              {/* Luxury Pagination Dots with Progress Fill */}
-              <div className="flex justify-center items-center gap-6 mt-12">
+              </div>
+              <div className="flex justify-center gap-2 mt-6 mb-6">
                 {carouselImages.map((_, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setImgIndex(idx)}
-                    className="relative h-[2px] bg-rose-100 overflow-hidden transition-all duration-700 mb-5"
-                    style={{ width: imgIndex === idx ? '80px' : '30px' }}
-                  >
-                    {imgIndex === idx && (
-                      <motion.div 
-                        key={`progress-${idx}`}
-                        initial={{ x: "-100%" }}
-                        animate={{ x: "0%" }}
-                        transition={{ duration: 6, ease: "linear" }}
-                        className="absolute inset-0 bg-rose-400"
-                      />
-                    )}
-                    <div className="absolute inset-0 bg-rose-300 opacity-0 hover:opacity-100 transition-opacity" />
-                  </button>
+                  <div key={idx} className={`h-1 transition-all duration-500 ${imgIndex === idx ? 'w-8 bg-rose-400' : 'w-2 bg-rose-200'}`} />
                 ))}
               </div>
             </div>
           </div>
 
-         
+          <div className="max-w-7xl mx-auto">
+            <Venue location={details.location} />
+          </div>
 
-          <Venue location={details.location} />
-
-             {/* QUOTE SECTION */}
+          {/* QUOTE SECTION */}
           <section className="py-24 px-8 text-center max-w-2xl mx-auto relative">
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 1.5 }}
-              viewport={{ once: true }}
-            >
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }} transition={{ duration: 1.5 }}>
               <span className="text-rose-300 text-4xl font-serif">“</span>
-              <p className="font-serif text-2xl md:text-4xl text-rose-900 italic px-4 leading-relaxed">
+              <p className="font-serif text-2xl md:text-4xl text-rose-900 italic leading-relaxed px-4">
                 Big day, big vibes, <br/> big celebration! <br />
                 <span className="text-xl md:text-2xl mt-4 block text-rose-700">Come eat, dance & celebrate with us!</span>
               </p>
             </motion.div>
             <div className="flex items-center justify-center gap-4 pt-12 px-4 max-w-xs mx-auto">
               <div className="h-[1px] flex-1 bg-rose-200" />
-              <motion.span 
-                animate={{ scale: [1, 1.2, 1] }} 
-                transition={{ repeat: Infinity, duration: 2 }} 
-                className="text-rose-400 text-2xl"
-              >
-                ❤
-              </motion.span>
+              <motion.span animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 2 }} className="text-rose-400 text-2xl">❤</motion.span>
               <div className="h-[1px] flex-1 bg-rose-200" />
             </div>
-            {/* <WavyDivider /> */}
           </section>
           
-          <div className="px-3">
-          <RSVP />
+          <div className="px-3 max-w-5xl mx-auto">
+            <RSVP />
           </div>
 
           {/* FOOTER */}
-          <footer className="py-40 text-center px-6 bg-[#FDFBF7]">
-            <motion.div
-               variants={textReveal} initial="hidden" whileInView="visible" viewport={{ once: true }}
-            >
+          <footer className="py-48 text-center px-6 bg-[#FDFBF7]">
+            <motion.div variants={textReveal} initial="hidden" whileInView="visible">
               <p className="font-serif text-2xl text-rose-900 italic mb-6">We can&apos;t wait to see you!</p>
-              <h2 className="font-serif text-5xl md:text-7xl text-rose-800 tracking-tight">
+              <h2 className="font-serif text-5xl md:text-8xl text-rose-800 tracking-tight">
                 {details.groom} <span className="text-3xl md:text-4xl font-light text-rose-300 mx-2">&</span> {details.bride}
               </h2>
-                <div className="flex items-center justify-center gap-4 pt-12 px-4 max-w-xs mx-auto">
-              <div className="h-[1px] flex-1 bg-rose-200" />
-              <motion.span 
-                animate={{ scale: [1, 1.2, 1] }} 
-                transition={{ repeat: Infinity, duration: 2 }} 
-                className="text-rose-400 text-2xl"
-              >
-                ❤
-              </motion.span>
-              <div className="h-[1px] flex-1 bg-rose-200" />
-            </div>
+              <div className="flex items-center justify-center gap-4 pt-12 px-4 max-w-xs mx-auto">
+                <div className="h-[1px] flex-1 bg-rose-200" />
+                <motion.span animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 2 }} className="text-rose-400 text-2xl">❤</motion.span>
+                <div className="h-[1px] flex-1 bg-rose-200" />
+              </div>
             </motion.div>
           </footer>
         </motion.div>
