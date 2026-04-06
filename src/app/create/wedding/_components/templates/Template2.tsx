@@ -258,7 +258,7 @@ export default function PremiumWeddingTemplate({ details }: { details: WeddingTe
         <section className="relative py-4 px-6 text-center max-w-4xl mx-auto">
           <motion.div variants={revealItem} className="space-y-8">
             <p className="font-serif italic text-2xl text-[#b08d57] leading-relaxed">
-              &quot;With Divine Blessings and Joyful Hearts, <br /> We Invite You To Grace Us With Your Presence...&quot;"
+              {`"With Divine Blessings and Joyful Hearts, <br /> We Invite You To Grace Us With Your Presence..."`}
             </p>
             <div className="py-10 border-y border-[#b08d57]/20">
               <h2 className="text-3xl md:text-5xl font-serif tracking-tighter text-gray-800 uppercase">
