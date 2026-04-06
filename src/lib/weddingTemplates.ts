@@ -1,4 +1,4 @@
-export type WeddingTemplateId = "royal" | "hindu" | "cute" | "cultural";
+export type WeddingTemplateId = "royal" | "classic" | "cute" | "cultural";
 
 export type WeddingTemplateMeta = {
   id: WeddingTemplateId;
@@ -18,10 +18,10 @@ export const WEDDING_TEMPLATES: WeddingTemplateMeta[] = [
     thumbnailSrc: "/assets/shadi.png",
   },
   {
-    id: "hindu",
+    id: "classic",
     title: "Shubh Vivah Patrika",
     subtitle: "Studio Beta",
-    description: "Traditional Hindu invite with blessings, family names, muhurat feel and a classic backdrop.",
+    description: "Traditional classic invite with blessings, family names, muhurat feel and a classic backdrop.",
     thumbnailSrc: "/assets/doli.png",
   },
    {
@@ -43,7 +43,7 @@ export const WEDDING_TEMPLATES: WeddingTemplateMeta[] = [
 ];
 
 export function isWeddingTemplateId(value: string | null | undefined): value is WeddingTemplateId {
-  return value === "royal" || value === "hindu" || value === "cute" || value === "cultural";
+  return value === "royal" || value === "classic" || value === "cute" || value === "cultural";
 }
 
 export function getWeddingTemplateMeta(id: WeddingTemplateId): WeddingTemplateMeta {

@@ -88,7 +88,7 @@ export default function WeddingCreateClient() {
       brideParents: "Mahesh & Kavita Iyer",
       rsvpPhone: "+91 98XXXXXX10",
       dressCode: "Traditional / Festive",
-      weddingHashtag: "#AaravWedsSiya",
+      weddingHashtag: "",
       events: [
         { name: "Sangeet", date: "2026-06-18", time: "19:00", image: "/assets/sangeet.jpg" },
         { name: "Haldi", date: "2026-06-19", time: "10:30", image: "/assets/haldi.jpg" },
@@ -101,11 +101,11 @@ export default function WeddingCreateClient() {
     setDetails((prev) => (prev.templateId === templateId ? prev : { ...prev, templateId }));
   }, [templateId]);
 
-  // Template-specific sensible defaults when switching to hindu.
+  // Template-specific sensible defaults when switching to classic.
   useEffect(() => {
-    if (templateId !== "hindu") return;
+    if (templateId !== "classic") return;
     setDetails((prev) => {
-      if (prev.templateId !== "hindu") return prev;
+      if (prev.templateId !== "classic") return prev;
       return {
         ...prev,
         groomMessage:
@@ -344,7 +344,7 @@ export default function WeddingCreateClient() {
         brideParents: details.brideParents?.trim(),
         rsvpPhone: details.rsvpPhone?.trim(),
         dressCode: details.dressCode?.trim(),
-        weddingHashtag: details.weddingHashtag?.trim(),
+        weddingHashtag: details.weddingHashtag ? details.weddingHashtag?.trim() : `#${details.bride.trim()}Weds${details.groom.trim()}`.replace(/\s+/g, ""),
         preWeddingVideoUrl: details.preWeddingVideoUrl?.trim(),
         heroImage,
         groomPhoto: groomPhoto?.trim() ? groomPhoto : undefined,
@@ -602,7 +602,7 @@ export default function WeddingCreateClient() {
           </motion.div>
         ) : (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="fixed inset-0 z-[100] bg-[#FDFBF7] overflow-y-auto">
-            {details.templateId === "hindu" ? <Template2 details={details} /> : <WeddingInvitation details={details} />}
+            {details.templateId === "classic" ? <Template2 details={details} /> : <WeddingInvitation details={details} />}
             <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex gap-4 z-[200] w-[92%] max-w-md">
               <button
                 onClick={() => setIsPreview(false)}
@@ -610,11 +610,21 @@ export default function WeddingCreateClient() {
               >
                 Edit Details
               </button>
-              <WhatsappButton
-                phone={"+919146920640"}
-                message={`Hi! I just finalized my wedding invitation using the ${details.templateId} template. I'd like to lock this in and get my wedding invite link !`}
-                className="flex-[2] py-4 rounded-2xl font-bold shadow-2xl transition-transform active:scale-95 disabled:opacity-60 bg-green-500 hover:bg-green-600"
-              ></WhatsappButton>
+              {isDev ? (
+                <button
+                  onClick={handleSaveAndGetLink}
+                  disabled={isSaving}
+                  className="flex-[2] py-4 rounded-2xl font-bold shadow-2xl transition-transform active:scale-95 disabled:opacity-60 bg-[rgb(121_29_80)] hover:bg-rose-950 text-white"
+                >
+                  {isSaving ? "Saving…" : "Save & Get Link"}
+                </button>
+              ) : (
+                <WhatsappButton
+                  phone={"+919146920640"}
+                  message={`Hi! I just finalized my wedding invitation using the ${details.templateId} template. I'd like to lock this in and get my wedding invite link !`}
+                  className="flex-[2] py-4 rounded-2xl font-bold shadow-2xl transition-transform active:scale-95 disabled:opacity-60 bg-green-500 hover:bg-green-600"
+                ></WhatsappButton>
+              )}
             </div>
           </motion.div>
         )}

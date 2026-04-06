@@ -29,7 +29,7 @@ type RecordType =
   | {
       type: "wedding";
       name?: string;
-      templateId?: "royal" | "hindu";
+      templateId?: "royal" | "classic";
       groom: string;
       bride: string;
       date: string;
@@ -167,7 +167,7 @@ export function SurpriseResultClient({ expectedType }: { expectedType: Experienc
           />
         )}
         {record.type === "wedding" && (
-          record.templateId === "hindu" ? (
+          record.templateId === "classic" ? (
             <Template2
               details={{
                 groom: record.groom,
