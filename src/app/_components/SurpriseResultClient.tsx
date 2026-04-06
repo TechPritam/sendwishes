@@ -12,6 +12,7 @@ import { SorryExperience } from "../sorry/_components/SorryExperince";
 import { ExperienceShell } from "@/app/create/_components/ExperienceShell";
 import { BirthdaySplash } from "@/components/BirthdaySplash";
 import WeddingInvitation from "@/app/create/wedding/_components/WeddingInvitation";
+import Template2 from "@/app/create/wedding/_components/templates/Template2";
 
 // Replace with your actual Cloudflare Worker URL
 const API_URL = "https://send-your-wishes-be.send-your-wishes.workers.dev";
@@ -28,12 +29,23 @@ type RecordType =
   | {
       type: "wedding";
       name?: string;
+      templateId?: "royal" | "hindu";
       groom: string;
       bride: string;
       date: string;
       time: string;
       location: string;
+      groomParents?: string;
+      brideParents?: string;
+      rsvpPhone?: string;
+      dressCode?: string;
+      weddingHashtag?: string;
+      preWeddingVideoUrl?: string;
       heroImage?: string;
+      groomPhoto?: string;
+      bridePhoto?: string;
+      groomMessage?: string;
+      brideMessage?: string;
       gallery?: string[];
       events?: { name: string; date: string; time: string; image: string }[];
     };
@@ -155,18 +167,37 @@ export function SurpriseResultClient({ expectedType }: { expectedType: Experienc
           />
         )}
         {record.type === "wedding" && (
-          <WeddingInvitation
-            details={{
-              groom: record.groom,
-              bride: record.bride,
-              date: record.date,
-              time: record.time,
-              location: record.location,
-              heroImage: record.heroImage,
-              gallery: record.gallery,
-              events: record.events,
-            }}
-          />
+          record.templateId === "hindu" ? (
+            <Template2
+              details={{
+                groom: record.groom,
+                bride: record.bride,
+                date: record.date,
+                time: record.time,
+                location: record.location,
+                heroImage: record.heroImage,
+                gallery: record.gallery,
+                events: record.events?.map((e) => ({ name: e.name, date: e.date, time: e.time })),
+                rsvpPhone: record.rsvpPhone,
+                dressCode: record.dressCode,
+                weddingHashtag: record.weddingHashtag,
+                preWeddingVideoUrl: record.preWeddingVideoUrl,
+              }}
+            />
+          ) : (
+            <WeddingInvitation
+              details={{
+                groom: record.groom,
+                bride: record.bride,
+                date: record.date,
+                time: record.time,
+                location: record.location,
+                heroImage: record.heroImage,
+                gallery: record.gallery,
+                events: record.events,
+              }}
+            />
+          )
         )}
       </motion.div>
     </ExperienceShell>

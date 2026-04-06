@@ -4,6 +4,15 @@ const config: Config = {
   content: ["./src/**/*.{js,ts,jsx,tsx,mdx}"],
   theme: {
     extend: {
+      colors: {
+        royal: {
+          maroon: "#800000",
+          gold: "#D4AF37",
+          burnt: "#C65A1E",
+          cream: "#FBF7EE",
+          ink: "#1A1210",
+        },
+      },
       fontFamily: {
         sans: [
           "var(--font-sans)",

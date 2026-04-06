@@ -58,7 +58,7 @@ export const Countdown = ({ targetDate, groom, bride }: CountdownProps) => {
       </motion.div>
 
       {/* Countdown */}
-      <div className="flex divide-x divide-rose-100 bg-white/60 py-6 px-6 mb-16 rounded-3xl backdrop-blur-sm border border-rose-50 shadow-sm">
+      <div className="flex divide-x divide-rose-100 bg-white/60 py-6 px-6 mb-18 mt-14 rounded-3xl backdrop-blur-sm border border-rose-50 shadow-sm">
         {[
           { val: timeLeft.days, label: "Days" },
           { val: timeLeft.hours, label: "Hours" },

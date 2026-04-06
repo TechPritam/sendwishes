@@ -17,7 +17,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${playfair.className} ${greatVibes.className} ${inter.className} font-sans antialiased min-h-dvh bg-gradient-to-b from-rose-50 via-pink-50 to-white`}
+        className={`${playfair.variable} ${greatVibes.variable} ${inter.variable} font-sans antialiased min-h-dvh bg-gradient-to-b from-rose-50 via-pink-50 to-white`}
       >
         <div className="relative min-h-dvh">
           <FloatingHearts />

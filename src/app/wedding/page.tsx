@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
 export default function WeddingPage() {
-  redirect("/create/wedding");
+  redirect("/create/wedding/templates");
 }

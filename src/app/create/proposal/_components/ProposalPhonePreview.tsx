@@ -301,7 +301,7 @@ export function ProposalPhonePreview({
                 <motion.img
                   key={celebrationGifs[gifIndex]}
                   src={celebrationGifs[gifIndex]}
-                  alt="Celebration"
+                  alt=""
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}

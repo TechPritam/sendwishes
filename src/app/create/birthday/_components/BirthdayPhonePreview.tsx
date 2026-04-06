@@ -363,7 +363,7 @@ export function BirthdayPhonePreview({ message, name }: { message?: string; name
           >
             <img
               src="/assets/birthday-celebration.gif"
-              alt="Birthday celebration"
+              alt=""
               className="w-full select-none rounded-3xl border border-white/10 bg-white/5 shadow-2xl"
               draggable={false}
             />

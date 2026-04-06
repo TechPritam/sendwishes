@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 
 export const Venue = ({ location }: { location: string }) => {
   return (
-    <section className="py-24 px-6 bg-white relative">
+    <section className="py-24 px-6 bg-transparent relative">
       <div className="max-w-md mx-auto text-center">
         <motion.div
           initial={{ opacity: 0, y: 20 }}

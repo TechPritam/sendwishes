@@ -565,7 +565,7 @@ export function ProposalCreate() {
                         <motion.img
                           key={previewGifs[previewGifIndex]}
                           src={previewGifs[previewGifIndex]}
-                          alt="Celebration"
+                          alt=""
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           exit={{ opacity: 0 }}

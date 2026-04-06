@@ -25,7 +25,7 @@ export default function Home() {
                 on repeat.
               </h6>
 
-              <div className="m-14 grid gap-3 sm:grid-cols-4">
+              <div className="m-14 grid gap-3 sm:grid-cols-5">
                 <Link
                   href="/create/proposal"
                   className="inline-flex items-center justify-center rounded-2xl border border-rose-200 bg-white/70 px-5 py-4 text-sm font-semibold text-rose-700 ring-1 ring-white/30 transition-colors hover:bg-rose-50"
@@ -45,16 +45,16 @@ export default function Home() {
                   THE APOLOGY ERA  🎀
                 </Link>
                 <Link
+                  href="/create/wedding/templates"
+                  className="inline-flex items-center justify-center rounded-2xl border border-rose-200 bg-white/70 px-5 py-4 text-sm font-semibold text-rose-700 ring-1 ring-white/30 transition-colors hover:bg-rose-50 shadow-sm"
+                >
+                  The Royal Wedding ✨
+                </Link>
+                <Link
                   href="/puzzle"
                   className="inline-flex items-center justify-center rounded-2xl border border-rose-200 bg-white/70 px-5 py-4 text-sm font-semibold text-rose-700 ring-1 ring-white/30 transition-colors hover:bg-rose-50"
                 >
                   Surprise Photo Puzzle  🧩
-                </Link>
-                <Link
-                  href="/create/wedding"
-                  className="inline-flex items-center justify-center rounded-2xl border border-rose-200 bg-white/70 px-5 py-4 text-sm font-semibold text-rose-700 ring-1 ring-white/30 transition-colors hover:bg-rose-50 shadow-sm"
-                >
-                  The Royal Wedding ✨
                 </Link>
               </div>
             </div>

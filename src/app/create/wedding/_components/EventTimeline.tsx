@@ -30,7 +30,7 @@ export const EventTimeline = ({ events }: EventTimelineProps) => {
   };
 
   return (
-    <section className="py-24 px-4 mx-auto relative overflow-hidden">
+    <section className="py-14 px-4 mb-2 mx-auto relative overflow-hidden">
       {/* SECTION HEADER */}
       <div className="text-center mb-20">
         <motion.span 
@@ -55,13 +55,13 @@ export const EventTimeline = ({ events }: EventTimelineProps) => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: index * 0.15, duration: 1, ease: [0.16, 1, 0.3, 1] }}
-            className="group relative h-[500px] overflow-hidden rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] border-[6px] border-white transition-all duration-500 hover:shadow-[0_30px_70px_rgba(141,45,82,0.2)]"
+            className="group relative h-[350px] overflow-hidden rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] border-[6px] border-white transition-all duration-500 hover:shadow-[0_30px_70px_rgba(141,45,82,0.2)]"
           >
             {/* Background Image - Keeping your exact path logic */}
             <img
               src={`/assets/${event.name.toLowerCase().replace(/\s+/g, '-')}.png`}
               alt={event.name}
-              className="absolute inset-0 w-full h-full object-cover transition-transform duration-[2s] group-hover:scale-110"
+              className="absolute inset-0 w-full h-[350px] object-cover transition-transform duration-[2s] group-hover:scale-110"
             />
     
             {/* Premium Overlay Gradient */}

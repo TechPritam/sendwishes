@@ -17,7 +17,7 @@ export const RSVP = () => (
           <textarea className="w-full py-3 bg-transparent outline-none font-serif text-lg h-24 resize-none" placeholder="Your wishes..." />
         </div>
         
-        <button className="w-[70%] ml-[60px] bg-rose-900 text-white py-4 rounded-2xl font-bold tracking-[0.2em] shadow-xl transition-transform hover:scale-[1.02]">SEND MESSAGE</button>
+        <button className="w-full m-auto bg-rose-700 text-white py-2 rounded-2xl font-semibold tracking-[0.2em] shadow-xl transition-transform hover:scale-[1.02]">SEND</button>
       </div>
     </div>
   </section>
