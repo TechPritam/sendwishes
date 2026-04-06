@@ -31,7 +31,8 @@ export default function WeddingCreateClient() {
   const templateId = isWeddingTemplateId(templateParam) ? templateParam : "royal";
   const templateMeta = getWeddingTemplateMeta(templateId);
 
-  const isDev = process.env.NODE_ENV === "development";
+  // const isDev = process.env.NODE_ENV === "development";s
+  const isDev = true
 
   const [isPreview, setIsPreview] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
