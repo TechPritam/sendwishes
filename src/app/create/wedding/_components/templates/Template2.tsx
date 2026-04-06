@@ -166,8 +166,9 @@ export default function PremiumWeddingTemplate({ details }: { details: WeddingTe
         className="fixed inset-0 z-0 opacity-20 pointer-events-none"
         style={{
           backgroundImage: "url('/assets/432.jpg')",
-          backgroundSize: "300px",
-          backgroundRepeat: "repeat",
+          backgroundSize: "cover",      // This stretches the image to fill the screen
+          backgroundPosition: "center", // Keeps the main part of the image centered
+          backgroundRepeat: "no-repeat",
         }}
       />
 
@@ -183,7 +184,7 @@ export default function PremiumWeddingTemplate({ details }: { details: WeddingTe
             <button
               type="button"
               onClick={toggleMusic}
-              className="h-11 w-11 rounded-full bg-white/85 backdrop-blur-md border border-black/10 shadow-lg flex items-center justify-center text-[#b08d57]"
+              className="h-11 w-11 rounded-full bg-white/85 backdrop-blur-md border border-black/10 shadow-lg flex items-center justify-center text-[#5D3A03]"
             >
               {isMuted ? "🔇" : "🎵"}
             </button>
@@ -191,7 +192,7 @@ export default function PremiumWeddingTemplate({ details }: { details: WeddingTe
               href={mapsUrl}
               target="_blank"
               rel="noreferrer"
-              className="h-11 w-11 rounded-full bg-white/85 backdrop-blur-md border border-black/10 shadow-lg flex items-center justify-center text-[#b08d57]"
+              className="h-11 w-11 rounded-full bg-white/85 backdrop-blur-md border border-black/10 shadow-lg flex items-center justify-center text-[#5D3A03]"
             >
               📍
             </a>
@@ -213,7 +214,7 @@ export default function PremiumWeddingTemplate({ details }: { details: WeddingTe
               alt="Lord Ganesh"
               className="w-[50px] md:w-32 h-auto drop-shadow-2xl mb-4"
             />
-            <p className="font-serif italic text-[#b08d57] tracking-[0.2em] text-sm md:text-lg">
+            <p className="font-serif italic text-[#5D3A03] tracking-[0.2em] text-sm md:text-lg">
               || श्री गणेशाय नमः ||
             </p>
           </motion.div>
@@ -239,17 +240,17 @@ export default function PremiumWeddingTemplate({ details }: { details: WeddingTe
           </motion.div>
 
           <motion.div variants={revealItem} className="relative z-20 text-center mt-10 px-6 max-w-lg">
-            <p className="font-serif text-[#b08d57] italic text-lg md:text-xl leading-relaxed">
+            <p className="font-serif text-[#5D3A03] italic text-lg md:text-xl leading-relaxed">
               With hearts full of joy and the love of our elders, we cordially invite you to join us as we celebrate the wedding ceremony of {details.groom} and {details.bride}.
             </p>
             <div className="mt-16 flex items-center justify-center gap-4">
-              <div className="h-[1px] w-8 bg-[#b08d57]/40" />
+              <div className="h-[1px] w-8 bg-[#5D3A03]/40" />
               ❤️
               <p className="uppercase tracking-[0.4em] text-xs font-bold text-gray-600">
                 {details.location || "Pimpale Nilakh, Pune"}
               </p>
               ❤️
-              <div className="h-[1px] w-8 bg-[#b08d57]/40"></div>
+              <div className="h-[1px] w-8 bg-[#5D3A03]/40"></div>
             </div>
           </motion.div>
         </section>
@@ -257,10 +258,10 @@ export default function PremiumWeddingTemplate({ details }: { details: WeddingTe
         {/* ANNOUNCEMENT */}
         <section className="relative py-4 px-6 text-center max-w-4xl mx-auto">
           <motion.div variants={revealItem} className="space-y-8">
-            <p className="font-serif italic text-2xl text-[#b08d57] leading-relaxed">
-              {`"With Divine Blessings and Joyful Hearts, <br /> We Invite You To Grace Us With Your Presence..."`}
+            <p className="font-serif italic text-2xl text-[#5D3A03] leading-relaxed">
+              {`" With Divine Blessings and Joyful Hearts, We Invite You To Grace Us With Your Presence..."`}
             </p>
-            <div className="py-10 border-y border-[#b08d57]/20">
+            <div className="py-10 border-y border-[#5D3A03]/20">
               <h2 className="text-3xl md:text-5xl font-serif tracking-tighter text-gray-800 uppercase">
                 {formatPrettyDate(details.date)}
               </h2>
@@ -275,7 +276,7 @@ export default function PremiumWeddingTemplate({ details }: { details: WeddingTe
                 { label: "Secs", val: timeLeft.secs }
               ].map((unit, i) => (
                 <div key={i} className="bg-white p-4 rounded-xl shadow-sm border border-black/5 my-10">
-                  <span className="block text-3xl font-light text-[#b08d57]">{String(unit.val).padStart(2, '0')}</span>
+                  <span className="block text-3xl font-light text-[#5D3A03]">{String(unit.val).padStart(2, '0')}</span>
                   <span className="text-[10px] uppercase tracking-tighter text-gray-400 font-bold">{unit.label}</span>
                 </div>
               ))}
@@ -333,7 +334,7 @@ export default function PremiumWeddingTemplate({ details }: { details: WeddingTe
         <motion.section variants={revealItem} className="py-24 px-6 max-w-4xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="font-serif text-4xl mb-4">Pre‑Wedding Film</h2>
-            <p className="italic text-[#b08d57] font-serif">A glimpse of our journey before forever</p>
+            <p className="italic text-[#5D3A03] font-serif">A glimpse of our journey before forever</p>
           </div>
           <div className="bg-white/70 backdrop-blur-sm border border-black/5 rounded-3xl p-4 md:p-8 shadow-sm">
             <div className="relative w-full aspect-video overflow-hidden rounded-2xl border border-black/10">
@@ -352,7 +353,7 @@ export default function PremiumWeddingTemplate({ details }: { details: WeddingTe
         {/* HASHTAG + QUOTE */}
         <motion.section variants={revealItem} className="py-16 px-6 max-w-2xl mx-auto text-center">
           <div className="bg-white/70 backdrop-blur-sm border border-black/5 rounded-3xl p-10 shadow-sm">
-            <p className="text-[#b08d57] tracking-[0.3em] text-xs font-bold uppercase">#{safeWeddingTag}</p>
+            <p className="text-[#5D3A03] tracking-[0.3em] text-xs font-bold uppercase">#{safeWeddingTag}</p>
             <p className="mt-6 font-serif italic text-2xl text-gray-800 leading-relaxed">
               “In the garden of life, love is the most beautiful flower.”
             </p>
